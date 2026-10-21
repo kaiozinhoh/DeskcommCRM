@@ -27,7 +27,6 @@ describe("EmitirAtestadoDialog", () => {
       blob: async () => blob,
     } as Response);
     const createObjectUrl = vi.fn(() => "blob:fake");
-    // @ts-expect-error jsdom não implementa createObjectURL
     global.URL.createObjectURL = createObjectUrl;
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     const onOpenChange = vi.fn();
