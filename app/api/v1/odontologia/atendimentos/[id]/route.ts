@@ -21,6 +21,7 @@ import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { roleAtLeast } from "@/lib/auth/types";
 import { requireSupportWrite } from "@/lib/impersonate/support";
+import { atualizarDataDaUltimaConsulta } from "@/lib/odontologia/data-da-ultima-consulta";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -105,7 +106,7 @@ export async function PATCH(req: NextRequest, ctx: Contexto): Promise<Response> 
     .eq("organization_id", authz.org.orgId)
     .select(CAMPOS)
     .single();
-  const atendimento = data as { id: string } | null;
+  const atendimento = data as { id: string; contact_id: string; status: string; data_hora: string } | null;
 
   if (error) {
     if (error.code === "42P01") {
@@ -127,6 +128,12 @@ export async function PATCH(req: NextRequest, ctx: Contexto): Promise<Response> 
     requestId,
     metadata: { campos: Object.keys(parsed.data), status_anterior: antes.status },
   });
+
+  // Melhor esforço, nunca bloqueia a resposta (ver o cabeçalho do helper): só quando o
+  // atendimento VIROU concluído agora — reconfirmar o mesmo desfecho não reescreve de novo.
+  if (atendimento.status === "concluido" && antes.status !== "concluido") {
+    await atualizarDataDaUltimaConsulta(supabase, authz.org.orgId, atendimento.contact_id, atendimento.data_hora);
+  }
 
   return ok(atendimento, { requestId });
 }

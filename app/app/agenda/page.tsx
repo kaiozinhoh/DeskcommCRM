@@ -11,6 +11,8 @@ import { donosDaAgenda } from "@/lib/agenda/donos-da-agenda";
 import { lerOcupacaoExterna } from "@/lib/agenda/ocupacao-externa";
 import { PROVEDOR_GOOGLE } from "@/lib/agenda/tipos";
 import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
+import { moduloLigado } from "@/lib/instalacao/modulos";
+import { garantirTipoDeAgendamentoOdontologico } from "@/lib/odontologia/tipo-de-agendamento-padrao";
 import { diaDeHojeNoFuso, semanaSemente } from "@/lib/agenda/semana-semente";
 import { fusoUtilizavel } from "@/lib/tempo/fusos";
 import { nomeDoContato, type ContatoNomeavel } from "@/lib/contacts/rotulo-do-contato";
@@ -118,6 +120,22 @@ export default async function AgendaPage() {
   const { de: inicio, ate: fim } = semanaSemente(new Date(), fusoDaAgenda);
   /** A data de hoje NO FUSO DA ORGANIZAÇÃO, para o cliente ancorar na mesma. */
   const hojeNaOrganizacao = diaDeHojeNoFuso(new Date(), fusoDaAgenda);
+
+  // Odontologia (módulo opcional, ADR-0002, Fatia 4): a clínica não precisa
+  // configurar a Agenda antes de usar o módulo — se não há NENHUM tipo ativo
+  // ainda, garante o padrão do módulo (melhor esforço, nunca derruba a página).
+  // Procedimento ≠ tipo: o seletor de procedimento (em `_client.tsx`) é outra
+  // escolha, feita à parte deste tipo.
+  if (await moduloLigado(supabase, "odontologia")) {
+    const { count: tiposAtivos } = await supabase
+      .from("calendar_event_types")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", activeOrg.orgId)
+      .eq("is_active", true);
+    if (!tiposAtivos) {
+      await garantirTipoDeAgendamentoOdontologico(supabase, activeOrg.orgId);
+    }
+  }
 
   // `.eq("organization_id", activeOrg.orgId)` em TODA consulta desta página, e
   // não só a RLS. A `fn_user_org_ids()` que as policies usam devolve TODAS as

@@ -1,4 +1,5 @@
 "use client";
+import { AtendimentoOdontologico } from "./AtendimentoOdontologico";
 import { MeetDoCompromisso, type MeetingDetail } from "./MeetDoCompromisso";
 import { SincronizacaoDoCompromisso, type SyncDetail } from "./SincronizacaoDoCompromisso";
 import { useState } from "react";
@@ -7,6 +8,7 @@ import Link from "next/link";
 import { apiClient } from "@/lib/api/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/auth/AuthProvider";
 import { useT } from "@/hooks/i18n/useT";
 import { useTagDeIdioma } from "@/hooks/i18n/useLocaleDeData";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
@@ -64,6 +66,8 @@ export function DetalheDoCompromisso({
 }) {
   const t = useT();
   const tagDoIdioma = useTagDeIdioma();
+  const { activeOrg } = useAuth();
+  const moduloOdontologiaInstalado = activeOrg?.modulos_ligados?.includes("odontologia") === true;
   const qc = useQueryClient();
   const [evidence, setEvidence] = useState("");
   const [reason, setReason] = useState("");
@@ -220,6 +224,9 @@ export function DetalheDoCompromisso({
                 )}
               </p>
             )}
+            {moduloOdontologiaInstalado && a.contact_id ? (
+              <AtendimentoOdontologico appointmentId={a.id} />
+            ) : null}
             {a.recovery ? (
               <div className="rounded-lg border p-3" role="status">
                 <p>

@@ -6,6 +6,9 @@ import { IdiomaProvider } from "@/lib/i18n/IdiomaProvider";
 const api = vi.hoisted(() => ({ get: vi.fn(), patch: vi.fn(), delete: vi.fn() }));
 vi.mock("@/lib/api/client", () => ({ apiClient: api }));
 vi.mock("@/components/feedback/ApiErrorToast", () => ({ showApiError: vi.fn() }));
+// `DetalheDoCompromisso` lê `activeOrg.modulos_ligados` (módulo Odontologia, Fatia 4) via
+// `useAuth()` — sem Provider no teste, o hook lança. Mesmo molde de app/app/kanban/_client.test.tsx.
+vi.mock("@/hooks/auth/AuthProvider", () => ({ useAuth: () => ({ activeOrg: null }) }));
 vi.mock("@/components/ui/sheet", () => ({
   Sheet: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SheetContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

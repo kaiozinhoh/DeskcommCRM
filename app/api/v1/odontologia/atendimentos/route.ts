@@ -22,6 +22,7 @@ import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { requireSupportWrite } from "@/lib/impersonate/support";
+import { atualizarDataDaUltimaConsulta } from "@/lib/odontologia/data-da-ultima-consulta";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -230,6 +231,13 @@ export async function POST(req: NextRequest): Promise<Response> {
       if (erroVinculo) {
         throw new Recusa(fail("internal_error", erroVinculo.message, 500, { requestId }));
       }
+    }
+
+    // Melhor esforço, nunca bloqueia a resposta (ver o cabeçalho do helper) — só quando o
+    // atendimento JÁ NASCE concluído (registro direto/retroativo); do "agendado" ao
+    // concluído é o PATCH quem atualiza (ver [id]/route.ts).
+    if (corpo.status === "concluido") {
+      await atualizarDataDaUltimaConsulta(supabase, orgId, corpo.contact_id, corpo.data_hora);
     }
 
     await audit({
