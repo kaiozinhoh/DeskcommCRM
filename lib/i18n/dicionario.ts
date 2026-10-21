@@ -15086,7 +15086,6 @@ export const DICIONARIO: Traducoes = {
   "Anexos": { es: "Adjuntos" },
   "Anexar arquivo": { es: "Adjuntar archivo" },
   "Nenhum anexo ainda.": { es: "Ningún adjunto todavía." },
-  "Remover": { es: "Eliminar" },
   "Nenhuma consulta ainda.": { es: "Ninguna consulta todavía." },
   "Nova consulta": { es: "Nueva consulta" },
   "Próximas": { es: "Próximas" },

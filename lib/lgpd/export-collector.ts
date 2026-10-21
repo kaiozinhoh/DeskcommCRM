@@ -357,6 +357,19 @@ export interface OdontologiaAtendimentoRow {
   procedimentos: string[];
 }
 
+/**
+ * Anexo do prontuário (migration 0727) — exame, raio-x, prontuário externo escaneado. Só
+ * METADADO aqui (nome, tipo, tamanho, data): o arquivo em si mora no Storage e não entra no
+ * export textual, mesma régua de mídia de `messages` (o export nunca embute binário).
+ */
+export interface OdontologiaProntuarioAnexoRow {
+  id: string;
+  nome_arquivo: string;
+  tipo_mime: string;
+  tamanho_bytes: number;
+  created_at: string;
+}
+
 export interface AuditRow {
   id: string;
   action: string;
@@ -690,6 +703,8 @@ export interface ExportPayload {
    * `honorarios_contratos`.
    */
   odontologia_atendimentos: OdontologiaAtendimentoRow[];
+  /** Módulo opcional de odontologia (migration 0727). Mesma régua de vazio que o item acima. */
+  odontologia_prontuario_anexos: OdontologiaProntuarioAnexoRow[];
   orders: OrderRow[];
   activities: ActivityRow[];
   checkpoints: CheckpointRow[];
@@ -1457,6 +1472,38 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
         data_hora: a.data_hora,
         procedimentos: procedimentosPorAtendimento.get(a.id) ?? [],
       }));
+    }
+  }
+
+  // Anexos do prontuário (migration 0727) — por `paciente_id`, não por `contact_id` direto
+  // (o cadastro de Paciente, migration 0726, é quem liga contato → anexo). Sem paciente
+  // cadastrado, não há anexo: sai vazio sem precisar de uma segunda consulta.
+  let odontologia_prontuario_anexos: OdontologiaProntuarioAnexoRow[] = [];
+  if (contactId) {
+    const { data: pacienteRow, error: erroPaciente } = await admin
+      .from("odontologia_pacientes")
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("contact_id", contactId)
+      .maybeSingle();
+    if (erroPaciente && erroPaciente.code !== "42P01") {
+      throw new Error(`odontologia_pacientes_load_failed: ${erroPaciente.message}`);
+    }
+    const pacienteId = (pacienteRow as { id: string } | null)?.id;
+    if (pacienteId) {
+      const { data: anexos, error: erroAnexos } = await admin
+        .from("odontologia_prontuario_anexos")
+        .select("id, nome_arquivo, tipo_mime, tamanho_bytes, created_at")
+        .eq("organization_id", organizationId)
+        .eq("paciente_id", pacienteId)
+        .order("created_at", { ascending: false });
+      if (erroAnexos) {
+        if (erroAnexos.code !== "42P01") {
+          throw new Error(`odontologia_prontuario_anexos_load_failed: ${erroAnexos.message}`);
+        }
+      } else if (anexos) {
+        odontologia_prontuario_anexos = anexos as OdontologiaProntuarioAnexoRow[];
+      }
     }
   }
 
@@ -2360,6 +2407,7 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
     honorarios_contratos,
     honorarios_parcelas,
     odontologia_atendimentos,
+    odontologia_prontuario_anexos,
     orders,
     activities,
     checkpoints,
@@ -2555,6 +2603,7 @@ function emptyPayload(
     honorarios_contratos: [],
     honorarios_parcelas: [],
     odontologia_atendimentos: [],
+    odontologia_prontuario_anexos: [],
     orders: [],
     activities: [],
     checkpoints: [],
