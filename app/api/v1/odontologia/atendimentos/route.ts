@@ -23,6 +23,7 @@ import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { atualizarDataDaUltimaConsulta } from "@/lib/odontologia/data-da-ultima-consulta";
+import { garantirPaciente } from "@/lib/odontologia/garantir-paciente";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -164,6 +165,26 @@ export async function POST(req: NextRequest): Promise<Response> {
   const corpo = lido.data;
 
   async function criar(): Promise<unknown> {
+    // "Um contato só é paciente quando esta linha existe" (migration 0726) — garante o
+    // cadastro ANTES do atendimento, no mesmo gesto de atender. Falha real (não o 23505 de
+    // corrida esperado) recusa a criação: um atendimento sem paciente contradiz o desenho.
+    const paciente = await garantirPaciente(supabase, orgId, corpo.contact_id, userId);
+    if (!paciente.ok) {
+      if (moduloNaoInstalado({ code: paciente.codigo })) {
+        throw new Recusa(fail("module_not_installed", MODULO_NAO_INSTALADO, 409, { requestId }));
+      }
+      throw new Recusa(fail("internal_error", paciente.mensagem, 500, { requestId }));
+    }
+    if (paciente.criado) {
+      await audit({
+        action: "odontologia.paciente_cadastrado",
+        resourceType: "odontologia_paciente",
+        resourceId: paciente.id,
+        requestId,
+        metadata: { contact_id: corpo.contact_id, origem: "primeiro_atendimento" },
+      });
+    }
+
     // A FK de `procedimento_id` é conferida pelo dono da tabela, por cima da RLS: sem esta
     // leitura (com a sessão, recortada pela RLS) o atendimento aceitaria o procedimento de
     // outra organização.

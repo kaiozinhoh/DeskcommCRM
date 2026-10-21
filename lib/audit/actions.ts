@@ -1199,6 +1199,10 @@ export const AUDIT_ACTIONS = [
   "odontologia.atendimento_agendado",
   "odontologia.atendimento_registrado",
   "odontologia.atendimento_corrigido",
+  // Odontologia (migration 0726) — Paciente como cadastro próprio, separado do Contato.
+  "odontologia.paciente_cadastrado",
+  "odontologia.paciente_arquivado",
+  "odontologia.paciente_reativado",
 ] as const;
 
 /** Um código de auditoria. Derivado de `AUDIT_ACTIONS` — não redigite a lista. */
