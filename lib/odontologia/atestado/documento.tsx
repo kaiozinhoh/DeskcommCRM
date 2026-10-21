@@ -67,7 +67,7 @@ function AtestadoPdfDoc({ d }: { d: AtestadoPdfInput }): React.ReactElement {
 
         <Text style={styles.rodape}>
           {d.t(
-            "Documento gerado pelo DeskcommCRM — a assinatura/carimbo é aplicada manualmente após a impressão.",
+            "Documento gerado automaticamente — a assinatura/carimbo é aplicada manualmente após a impressão.",
           )}
         </Text>
       </Page>

@@ -15077,8 +15077,8 @@ export const DICIONARIO: Traducoes = {
   "Cadastrar como paciente": { es: "Registrar como paciente" },
   "Histórico de consultas": { es: "Historial de consultas" },
   "Prontuário odontológico": { es: "Historial clínico odontológico" },
-  "Resumo gerado pelo DeskcommCRM a partir dos atendimentos registrados — não substitui o prontuário legal da clínica.": {
-    es: "Resumen generado por DeskcommCRM a partir de las atenciones registradas — no sustituye el historial clínico legal de la clínica.",
+  "Resumo gerado automaticamente a partir dos atendimentos registrados — não substitui o prontuário legal da clínica.": {
+    es: "Resumen generado automáticamente a partir de las atenciones registradas — no sustituye el historial clínico legal de la clínica.",
   },
   "Nenhum atendimento registrado ainda.": { es: "Ningún atendimiento registrado todavía." },
   "página": { es: "página" },
@@ -15093,8 +15093,8 @@ export const DICIONARIO: Traducoes = {
   },
   "a partir desta data": { es: "a partir de esta fecha" },
   "CRO": { es: "CRO" },
-  "Documento gerado pelo DeskcommCRM — a assinatura/carimbo é aplicada manualmente após a impressão.": {
-    es: "Documento generado por DeskcommCRM — la firma/sello se aplica manualmente después de imprimir.",
+  "Documento gerado automaticamente — a assinatura/carimbo é aplicada manualmente após a impressão.": {
+    es: "Documento generado automáticamente — la firma/sello se aplica manualmente después de imprimir.",
   },
   "Descreva o motivo do atestado.": { es: "Describa el motivo del certificado." },
   "Informe o nome e o CRO do dentista.": { es: "Indique el nombre y el CRO del dentista." },

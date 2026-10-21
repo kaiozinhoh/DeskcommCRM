@@ -6,7 +6,7 @@
  * (@react-pdf/renderer, marca da organização).
  *
  * Este documento NÃO substitui o prontuário legal da clínica (ver migration 0722) — é um
- * resumo do que o DeskcommCRM registrou, para impressão/anexo ao prontuário físico.
+ * resumo do que o sistema registrou, para impressão/anexo ao prontuário físico.
  */
 import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
@@ -108,7 +108,7 @@ function ProntuarioPdfDoc({ d }: { d: ProntuarioPdfInput }): React.ReactElement 
 
         <Text style={styles.aviso}>
           {d.t(
-            "Resumo gerado pelo DeskcommCRM a partir dos atendimentos registrados — não substitui o prontuário legal da clínica.",
+            "Resumo gerado automaticamente a partir dos atendimentos registrados — não substitui o prontuário legal da clínica.",
           )}{" "}
           {d.t("Gerado em")} {d.geradoEm}.
         </Text>
@@ -123,7 +123,7 @@ function ProntuarioPdfDoc({ d }: { d: ProntuarioPdfInput }): React.ReactElement 
           style={styles.footer}
           fixed
           render={({ pageNumber, totalPages }) =>
-            `${d.marca.appName ?? "DeskcommCRM"} — ${d.t("página")} ${pageNumber} ${d.t("de")} ${totalPages}`
+            `${d.marca.appName ?? d.t("Prontuário odontológico")} — ${d.t("página")} ${pageNumber} ${d.t("de")} ${totalPages}`
           }
         />
       </Page>
