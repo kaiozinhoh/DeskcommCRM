@@ -337,6 +337,26 @@ export interface HonorariosParcelaRow {
   financial_entry_id: string | null;
 }
 
+/**
+ * Atendimento odontológico (migration 0722) — módulo opcional, ADR-0002 D8. Direto por
+ * `contact_id`: o atendimento é da PESSOA, não de um caso/lead. `dente_regiao` entra (fato sobre
+ * o tratamento, dado dele); `observacao` é nota clínica interna da equipe e sai em
+ * `CAMPOS_DA_EQUIPE` (copia-do-titular.ts) — a mesma coluna que a seção de LGPD redige na
+ * anonimização (`modulo_secoes_lgpd`).
+ */
+export interface OdontologiaAtendimentoRow {
+  id: string;
+  appointment_id: string | null;
+  dentista_user_id: string | null;
+  dente_regiao: string | null;
+  observacao: string | null;
+  valor_cobrado_cents: number | null;
+  status: string;
+  data_hora: string;
+  /** Nome dos procedimentos previstos/realizados (join com odontologia_procedimentos). */
+  procedimentos: string[];
+}
+
 export interface AuditRow {
   id: string;
   action: string;
@@ -664,6 +684,12 @@ export interface ExportPayload {
    */
   honorarios_contratos: HonorariosContratoRow[];
   honorarios_parcelas: HonorariosParcelaRow[];
+  /**
+   * Módulo opcional de odontologia (ADR-0002, migration 0722). Vazio nas instalações que não o
+   * instalaram, ou quando o titular não tem atendimento — nunca ausente, mesma razão de
+   * `honorarios_contratos`.
+   */
+  odontologia_atendimentos: OdontologiaAtendimentoRow[];
   orders: OrderRow[];
   activities: ActivityRow[];
   checkpoints: CheckpointRow[];
@@ -1371,6 +1397,66 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
           honorarios_parcelas = parcelas;
         }
       }
+    }
+  }
+
+  // Odontologia — módulo opcional (ADR-0002/D8, migration 0722). Direto por `contact_id`
+  // (diferente de honorários: o atendimento é da PESSOA, não de um lead/caso).
+  //
+  // Módulo pode não estar instalado nesta instalação — a tabela então não existe (42P01) — e o
+  // bloco sai vazio nesse caso, sem falhar o export inteiro por causa de um módulo que a
+  // organização nem ligou.
+  let odontologia_atendimentos: OdontologiaAtendimentoRow[] = [];
+  if (contactId) {
+    const { data, error } = await admin
+      .from("odontologia_atendimentos")
+      .select("id, appointment_id, dentista_user_id, dente_regiao, observacao, valor_cobrado_cents, status, data_hora")
+      .eq("organization_id", organizationId)
+      .eq("contact_id", contactId)
+      .order("data_hora", { ascending: false });
+    // Qualquer OUTRO erro lança: o worker marca a tentativa como falha e tenta de novo, em vez de
+    // entregar ao titular um export sem o atendimento como se fosse completo (ADR-0002 D8).
+    if (error) {
+      if (error.code !== "42P01") {
+        throw new Error(`odontologia_atendimentos_load_failed: ${error.message}`);
+      }
+    } else if (data) {
+      const atendimentoIds = data.map((a) => a.id);
+      let procedimentosPorAtendimento = new Map<string, string[]>();
+      if (atendimentoIds.length > 0) {
+        const { data: vinculos, error: erroVinculos } = await admin
+          .from("odontologia_atendimento_procedimentos")
+          .select("atendimento_id, odontologia_procedimentos(nome)")
+          .eq("organization_id", organizationId)
+          .in("atendimento_id", atendimentoIds);
+        if (erroVinculos) {
+          throw new Error(`odontologia_atendimento_procedimentos_load_failed: ${erroVinculos.message}`);
+        }
+        procedimentosPorAtendimento = new Map();
+        for (const v of (vinculos ?? []) as Array<{
+          atendimento_id: string;
+          odontologia_procedimentos: { nome: string } | { nome: string }[] | null;
+        }>) {
+          const procedimento = Array.isArray(v.odontologia_procedimentos)
+            ? v.odontologia_procedimentos[0]
+            : v.odontologia_procedimentos;
+          if (!procedimento) continue;
+          const lista = procedimentosPorAtendimento.get(v.atendimento_id) ?? [];
+          lista.push(procedimento.nome);
+          procedimentosPorAtendimento.set(v.atendimento_id, lista);
+        }
+      }
+      odontologia_atendimentos = data.map((a) => ({
+        id: a.id,
+        appointment_id: a.appointment_id,
+        dentista_user_id: a.dentista_user_id,
+        dente_regiao: a.dente_regiao,
+        observacao: a.observacao,
+        valor_cobrado_cents: a.valor_cobrado_cents,
+        status: a.status,
+        data_hora: a.data_hora,
+        procedimentos: procedimentosPorAtendimento.get(a.id) ?? [],
+      }));
     }
   }
 
@@ -2273,6 +2359,7 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
     leads,
     honorarios_contratos,
     honorarios_parcelas,
+    odontologia_atendimentos,
     orders,
     activities,
     checkpoints,
@@ -2467,6 +2554,7 @@ function emptyPayload(
     leads: [],
     honorarios_contratos: [],
     honorarios_parcelas: [],
+    odontologia_atendimentos: [],
     orders: [],
     activities: [],
     checkpoints: [],

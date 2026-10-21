@@ -1,7 +1,7 @@
 /**
  * GET/POST /api/v1/odontologia/procedimentos — módulo opcional de clínica (ADR-0002).
  *
- * Ler exige `viewer`; criar exige `manager` (mesma RLS da migration 0706: preço de referência
+ * Ler exige `viewer`; criar exige `manager` (mesma RLS da migration 0721: preço de referência
  * não é coisa que `agent` configure). Um 42P01 (tabela ausente — módulo não instalado) vira uma
  * mensagem clara, nunca um 500 cru.
  */

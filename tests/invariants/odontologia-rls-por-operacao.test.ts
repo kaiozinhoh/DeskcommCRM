@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import {
   countAs,
   GOV_AGENT_A,
+  GOV_CONTACT_1,
   GOV_MANAGER,
   GOV_ORG,
   GOV_VIEWER,
@@ -83,3 +84,92 @@ describe("manager escreve (as rotas são manager) — controle positivo", () => 
     expect(existe(PROCEDIMENTO_OUTRA_ORG)).toBe(true);
   });
 });
+
+/**
+ * ODONTOLOGIA_ATENDIMENTOS — leitura para a organização, `agent`+ registra
+ * (insere o previsto, marca concluído/faltou), ninguém apaga pela sessão
+ * (nenhuma policy de delete nasce — "não apagar fisicamente" do catálogo de
+ * permissões). A régua fina de CORREÇÃO (manager+) é da rota, não da RLS.
+ */
+describe("odontologia_atendimentos — agent+ registra, viewer só lê, ninguém apaga", () => {
+  const PROCEDIMENTO_ATEND = "cccccccc-9999-4000-8000-00000000e004";
+  const ATENDIMENTO = "cccccccc-9999-4000-8000-00000000e011";
+  const ATENDIMENTO_OUTRA_ORG = "cccccccc-9999-4000-8000-00000000e012";
+
+  beforeAll(() => {
+    sql(`
+      insert into public.odontologia_procedimentos (id, organization_id, nome, duracao_min) values
+        ('${PROCEDIMENTO_ATEND}', '${GOV_ORG}', 'Avaliação RLS atendimento', 20)
+        on conflict (id) do nothing;
+      insert into public.odontologia_atendimentos
+          (id, organization_id, contact_id, status, data_hora) values
+        ('${ATENDIMENTO}', '${GOV_ORG}', '${GOV_CONTACT_1}', 'agendado', now()),
+        ('${ATENDIMENTO_OUTRA_ORG}', '${ORG_B}', '${GOV_CONTACT_1}', 'agendado', now())
+        on conflict (id) do nothing;
+    `);
+  });
+
+  it("viewer lê, mas não registra nem edita", () => {
+    expect(
+      countAs(GOV_VIEWER, `select count(*) from public.odontologia_atendimentos where id = '${ATENDIMENTO}'`),
+    ).toBe(1);
+    expect(
+      writeCountAs(GOV_VIEWER, `insert into public.odontologia_atendimentos (organization_id, contact_id, status, data_hora) values ('${GOV_ORG}', '${GOV_CONTACT_1}', 'agendado', now())`),
+    ).toBe(0);
+    expect(writeCountAs(GOV_VIEWER, `update public.odontologia_atendimentos set status = 'concluido' where id = '${ATENDIMENTO}'`)).toBe(0);
+  });
+
+  it("agent registra (cria e marca concluído/faltou) — controle positivo", () => {
+    expect(
+      writeCountAs(GOV_AGENT_A, `insert into public.odontologia_atendimentos (organization_id, contact_id, status, data_hora) values ('${GOV_ORG}', '${GOV_CONTACT_1}', 'agendado', now())`),
+    ).toBe(1);
+    expect(writeCountAs(GOV_AGENT_A, `update public.odontologia_atendimentos set status = 'concluido' where id = '${ATENDIMENTO}'`)).toBe(1);
+  });
+
+  it("agent não cria atendimento com contato de outra organização (recusa cross-org na própria FK)", () => {
+    expect(
+      writeCountAs(GOV_AGENT_A, `insert into public.odontologia_atendimentos (organization_id, contact_id, status, data_hora) values ('${ORG_B}', '${GOV_CONTACT_1}', 'agendado', now())`),
+    ).toBe(0);
+  });
+
+  it("ninguém apaga pela sessão — nem manager (sem policy de delete)", () => {
+    expect(writeCountAs(GOV_MANAGER, `delete from public.odontologia_atendimentos where id = '${ATENDIMENTO}'`)).toBe(0);
+    expect(existeAtendimento(ATENDIMENTO)).toBe(true);
+  });
+
+  it("membro da organização A não lê atendimento da organização B (cross-org)", () => {
+    expect(
+      countAs(GOV_AGENT_A, `select count(*) from public.odontologia_atendimentos where id = '${ATENDIMENTO_OUTRA_ORG}'`),
+    ).toBe(0);
+  });
+
+  describe("odontologia_atendimento_procedimentos — agent+ adiciona, manager+ remove", () => {
+    it("agent associa um procedimento ao atendimento", () => {
+      expect(
+        writeCountAs(
+          GOV_AGENT_A,
+          `insert into public.odontologia_atendimento_procedimentos (organization_id, atendimento_id, procedimento_id) values ('${GOV_ORG}', '${ATENDIMENTO}', '${PROCEDIMENTO_ATEND}')`,
+        ),
+      ).toBe(1);
+    });
+
+    it("agent não remove (correção é manager+); manager remove — controle positivo", () => {
+      expect(
+        writeCountAs(
+          GOV_AGENT_A,
+          `delete from public.odontologia_atendimento_procedimentos where atendimento_id = '${ATENDIMENTO}'`,
+        ),
+      ).toBe(0);
+      expect(
+        writeCountAs(
+          GOV_MANAGER,
+          `delete from public.odontologia_atendimento_procedimentos where atendimento_id = '${ATENDIMENTO}'`,
+        ),
+      ).toBe(1);
+    });
+  });
+});
+
+function existeAtendimento(id: string): boolean {
+  return lastLine(sql(`select exists(select 1 from public.odontologia_atendimentos where id = '${id}')::text;`)) === "true";
+}

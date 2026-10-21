@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  * PROCEDIMENTOS — módulo opcional Odontologia (ADR-0002): o cadastro de procedimentos da
  * clínica (nome, duração padrão, valor de referência).
  *
- * `viewer` lê; criar, editar e arquivar exige `manager`+ — mesma régua da migration 0706
+ * `viewer` lê; criar, editar e arquivar exige `manager`+ — mesma régua da migration 0721
  * (preço de referência não é coisa que `agent` configure).
  */
 export default async function Page() {
