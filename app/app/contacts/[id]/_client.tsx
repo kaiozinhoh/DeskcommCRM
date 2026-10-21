@@ -46,6 +46,7 @@ import { AnonymizeDialog } from "@/components/contacts/AnonymizeDialog";
 import { PropostasDeDado } from "@/components/contacts/PropostasDeDado";
 import { RoteirosDoContato } from "@/components/contacts/RoteirosDoContato";
 import { ConversaNoDossie } from "@/components/kanban/ConversaNoDossie";
+import { HistoricoDeConsultasOdontologicas } from "@/components/contacts/HistoricoDeConsultasOdontologicas";
 import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
 import { origemDoContato } from "@/lib/leads/origem-do-contato";
 import { phoneForDisplay } from "@/lib/channels/phone-variants";
@@ -81,6 +82,9 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
   const q = useContact(contactId);
   const { user, activeOrg } = useAuth();
   const clientesLigado = activeOrg?.cliente_pela_agenda === true;
+  // Módulo opcional Odontologia (ADR-0002, Fatia 5): mesmo mecanismo condicional
+  // da aba "lgpd" abaixo — sem o módulo instalado, a aba simplesmente não existe.
+  const moduloOdontologiaInstalado = activeOrg?.modulos_ligados?.includes("odontologia") === true;
   // As DEFINIÇÕES continuam no funil (`crm_pipelines.settings.fields[]`) — só o
   // VALOR mora no contato. `camposDoFunil` é o mesmo leitor que o Kanban usa.
   const pipelineQuery = useDefaultPipeline(Boolean(activeOrg));
@@ -369,6 +373,9 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
         <TabsList>
           <TabsTrigger value="overview">{t("Visão geral")}</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          {moduloOdontologiaInstalado && (
+            <TabsTrigger value="odontologia">{t("Histórico de consultas")}</TabsTrigger>
+          )}
           {isAdmin && <TabsTrigger value="lgpd">LGPD</TabsTrigger>}
         </TabsList>
 
@@ -523,6 +530,12 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
         <TabsContent value="timeline" className="mt-4">
           <TimelineView contactId={contactId} />
         </TabsContent>
+
+        {moduloOdontologiaInstalado && (
+          <TabsContent value="odontologia" className="mt-4">
+            <HistoricoDeConsultasOdontologicas contactId={contactId} />
+          </TabsContent>
+        )}
 
         {isAdmin && (
           <TabsContent value="lgpd" className="mt-4">

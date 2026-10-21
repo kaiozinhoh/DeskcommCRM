@@ -153,4 +153,6 @@ export {
   ArrowsOutSimple,
   // /admin/modulos: módulo opcional com tabela própria (ADR-0002)
   Stack,
+  // módulo Odontologia (ADR-0002): Pacientes no menu
+  Tooth,
 } from "@phosphor-icons/react/dist/ssr";
