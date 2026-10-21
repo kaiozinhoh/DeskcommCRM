@@ -15076,6 +15076,13 @@ export const DICIONARIO: Traducoes = {
   "Buscar por nome ou telefone": { es: "Buscar por nombre o teléfono" },
   "Cadastrar como paciente": { es: "Registrar como paciente" },
   "Histórico de consultas": { es: "Historial de consultas" },
+  "Prontuário odontológico": { es: "Historial clínico odontológico" },
+  "Resumo gerado pelo DeskcommCRM a partir dos atendimentos registrados — não substitui o prontuário legal da clínica.": {
+    es: "Resumen generado por DeskcommCRM a partir de las atenciones registradas — no sustituye el historial clínico legal de la clínica.",
+  },
+  "Nenhum atendimento registrado ainda.": { es: "Ningún atendimiento registrado todavía." },
+  "página": { es: "página" },
+  "Baixar prontuário em PDF": { es: "Descargar historial clínico en PDF" },
   "Nenhuma consulta ainda.": { es: "Ninguna consulta todavía." },
   "Nova consulta": { es: "Nueva consulta" },
   "Próximas": { es: "Próximas" },

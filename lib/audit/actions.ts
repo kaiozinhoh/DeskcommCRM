@@ -1203,6 +1203,9 @@ export const AUDIT_ACTIONS = [
   "odontologia.paciente_cadastrado",
   "odontologia.paciente_arquivado",
   "odontologia.paciente_reativado",
+  // Odontologia (migration 0727) — anexos do prontuário.
+  "odontologia.prontuario_anexo_criado",
+  "odontologia.prontuario_anexo_removido",
 ] as const;
 
 /** Um código de auditoria. Derivado de `AUDIT_ACTIONS` — não redigite a lista. */
