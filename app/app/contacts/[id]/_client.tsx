@@ -47,6 +47,7 @@ import { PropostasDeDado } from "@/components/contacts/PropostasDeDado";
 import { RoteirosDoContato } from "@/components/contacts/RoteirosDoContato";
 import { ConversaNoDossie } from "@/components/kanban/ConversaNoDossie";
 import { HistoricoDeConsultasOdontologicas } from "@/components/contacts/HistoricoDeConsultasOdontologicas";
+import { ProntuarioEAnexos } from "@/components/contacts/ProntuarioEAnexos";
 import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
 import { origemDoContato } from "@/lib/leads/origem-do-contato";
 import { phoneForDisplay } from "@/lib/channels/phone-variants";
@@ -534,8 +535,9 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [], defaultTa
         </TabsContent>
 
         {moduloOdontologiaInstalado && (
-          <TabsContent value="odontologia" className="mt-4">
+          <TabsContent value="odontologia" className="mt-4 space-y-4">
             <HistoricoDeConsultasOdontologicas contactId={contactId} />
+            <ProntuarioEAnexos contactId={contactId} />
           </TabsContent>
         )}
 

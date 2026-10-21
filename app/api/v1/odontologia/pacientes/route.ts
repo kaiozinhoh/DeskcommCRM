@@ -54,6 +54,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const url = new URL(req.url);
   const ativoParam = url.searchParams.get("ativo");
+  const contactIdParam = url.searchParams.get("contact_id");
 
   const supabase = await createClient();
   let q = supabase
@@ -64,6 +65,9 @@ export async function GET(req: NextRequest): Promise<Response> {
   if (ativoParam === "true") q = q.eq("ativo", true);
   if (ativoParam === "false") q = q.eq("ativo", false);
   // ativoParam ausente ou "all": sem filtro — a tela decide o que mostrar.
+  // `contact_id`: resolver "este contato já é paciente?" sem baixar a lista inteira — a ficha
+  // do contato (fora do fluxo da tela de Pacientes) usa isto pra decidir se mostra prontuário.
+  if (contactIdParam) q = q.eq("contact_id", contactIdParam);
 
   const { data, error } = await q;
   if (error) {
