@@ -11,6 +11,7 @@ import type { NextRequest } from "next/server";
 
 import { fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
+import { tagDeIdioma } from "@/lib/i18n/datas";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { marcaDaOrganizacaoParaPdf } from "@/lib/propostas/marca-da-organizacao-para-pdf";
 import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
@@ -88,9 +89,11 @@ export async function GET(_req: NextRequest, { params }: Params): Promise<Respon
   const moeda = await moedaDaOrganizacao(supabase, orgId);
   const marca = await marcaDaOrganizacaoParaPdf(supabase, orgId);
 
+  const tag = tagDeIdioma(authz.user.idioma);
   const buffer = await renderProntuarioPdf({
     nomeDoPaciente: rotuloParaAEquipe(contato as { name?: string | null; display_name?: string | null; phone_number?: string | null }, t),
-    geradoEm: new Date().toLocaleString("pt-BR"),
+    geradoEm: new Date().toLocaleString(tag),
+    tagDeIdioma: tag,
     atendimentos: linhas.map((l) => ({
       dataHora: l.data_hora,
       status: l.status,

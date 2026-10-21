@@ -42,6 +42,9 @@ export interface ProntuarioPdfInput {
   atendimentos: AtendimentoDoProntuario[];
   marca: { appName: string | null; accentHex: string | null; logoUrl: string | null };
   t: (texto: string) => string;
+  /** Etiqueta BCP-47 de quem gerou (`tagDeIdioma`, lib/i18n/datas.ts) — a data de cada
+   * atendimento segue quem está lendo, nunca "pt-BR" fixo. */
+  tagDeIdioma: string;
 }
 
 const ROTULO_DO_STATUS: Record<AtendimentoDoProntuario["status"], string> = {
@@ -55,11 +58,19 @@ function formatarMoeda(cents: number, moeda: string): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: moeda }).format(cents / 100);
 }
 
-function Atendimento({ a, t }: { a: AtendimentoDoProntuario; t: (texto: string) => string }): React.ReactElement {
+function Atendimento({
+  a,
+  t,
+  tagDeIdioma,
+}: {
+  a: AtendimentoDoProntuario;
+  t: (texto: string) => string;
+  tagDeIdioma: string;
+}): React.ReactElement {
   return (
     <View style={styles.atendimento} wrap={false}>
       <Text style={styles.atendimentoData}>
-        {new Date(a.dataHora).toLocaleString("pt-BR")} — {t(ROTULO_DO_STATUS[a.status])}
+        {new Date(a.dataHora).toLocaleString(tagDeIdioma)} — {t(ROTULO_DO_STATUS[a.status])}
       </Text>
       {a.procedimentos.length > 0 ? (
         <Text style={styles.atendimentoLinha}>
@@ -116,7 +127,9 @@ function ProntuarioPdfDoc({ d }: { d: ProntuarioPdfInput }): React.ReactElement 
         {d.atendimentos.length === 0 ? (
           <Text style={styles.vazio}>{d.t("Nenhum atendimento registrado ainda.")}</Text>
         ) : (
-          d.atendimentos.map((a, i) => <Atendimento key={i} a={a} t={d.t} />)
+          d.atendimentos.map((a, i) => (
+            <Atendimento key={i} a={a} t={d.t} tagDeIdioma={d.tagDeIdioma} />
+          ))
         )}
 
         <Text

@@ -21,6 +21,7 @@ import { fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { requireSupportWrite } from "@/lib/impersonate/support";
+import { tagDeIdioma } from "@/lib/i18n/datas";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
 import { marcaDaOrganizacaoParaPdf } from "@/lib/propostas/marca-da-organizacao-para-pdf";
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest, { params }: Params): Promise<Respon
       contato as { name?: string | null; display_name?: string | null; phone_number?: string | null },
       t,
     ),
-    data: new Date().toLocaleDateString("pt-BR"),
+    data: new Date().toLocaleDateString(tagDeIdioma(authz.user.idioma)),
     motivo: lido.data.motivo,
     diasAfastamento: lido.data.dias_afastamento ?? null,
     dentistaNome: lido.data.dentista_nome,
