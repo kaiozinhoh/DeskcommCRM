@@ -15050,6 +15050,15 @@ export const DICIONARIO: Traducoes = {
   "Pacientes, procedimentos e histórico de atendimentos ligados à agenda. Para clínicas odontológicas.": {
     es: "Pacientes, procedimientos e historial de atenciones vinculados a la agenda. Para clínicas odontológicas.",
   },
+  "Procedimentos": { es: "Procedimientos" },
+  "O cadastro de procedimentos da clínica: nome, duração padrão e valor de referência.": {
+    es: "El registro de procedimientos de la clínica: nombre, duración estándar y valor de referencia.",
+  },
+  "Nenhum procedimento ainda.": { es: "Ningún procedimiento todavía." },
+  "Não foi possível carregar os procedimentos.": { es: "No fue posible cargar los procedimientos." },
+  "Duração (min)": { es: "Duración (min)" },
+  "Valor de referência": { es: "Valor de referencia" },
+  "Criar procedimento": { es: "Crear procedimiento" },
   "Módulos opcionais com tabela própria, criados quando você instala — quem não instala não carrega as tabelas dele. Instalar aqui vale para todas as organizações desta instalação.": {
     es: "Módulos opcionales con tabla propia, creados cuando los instalas — quien no instala no carga sus tablas. Instalar aquí vale para todas las organizaciones de esta instalación.",
   },
