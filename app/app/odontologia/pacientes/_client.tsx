@@ -104,7 +104,7 @@ export function Pacientes() {
         if (!busca.trim()) return true;
         const termo = busca.trim().toLowerCase();
         return (
-          (contato.display_name ?? contato.name ?? "").toLowerCase().includes(termo) ||
+          rotuloParaAEquipe(contato, t).toLowerCase().includes(termo) ||
           (contato.phone_number ?? "").includes(termo)
         );
       });
