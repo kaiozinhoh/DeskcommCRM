@@ -70,20 +70,30 @@ begin
   drop policy if exists tenant_isolation_odontologia_procedimentos_all on public.odontologia_procedimentos;
 
   drop policy if exists odontologia_procedimentos_select on public.odontologia_procedimentos;
-  create policy odontologia_procedimentos_select on public.odontologia_procedimentos
+  -- Cada `create policy` deste corpo ocupa DUAS linhas de propósito (#1906). O
+  -- `update.sh` de v1.39.0 a v1.63.0 lê as regras do TEXTO deste arquivo (nome
+  -- da regra e tabela na MESMA linha do create), até dentro de corpo de função,
+  -- e cobraria estas 4 numa instalação sem o módulo. Esse script antigo fica no
+  -- disco durante a atualização, então o conserto dele não alcança quem
+  -- atualiza: a forma do texto sim. Vigiado por
+  -- tests/unit/adr-0002-funcao-provisionadora.test.ts.
+  create policy odontologia_procedimentos_select
+    on public.odontologia_procedimentos
     for select using (
       organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
     );
 
   drop policy if exists odontologia_procedimentos_insert on public.odontologia_procedimentos;
-  create policy odontologia_procedimentos_insert on public.odontologia_procedimentos
+  create policy odontologia_procedimentos_insert
+    on public.odontologia_procedimentos
     for insert
     with check (public.fn_is_platform_admin()
                 or (organization_id in (select public.fn_user_org_ids())
                     and public.fn_role_at_least(organization_id, 'manager')));
 
   drop policy if exists odontologia_procedimentos_update on public.odontologia_procedimentos;
-  create policy odontologia_procedimentos_update on public.odontologia_procedimentos
+  create policy odontologia_procedimentos_update
+    on public.odontologia_procedimentos
     for update
     using (public.fn_is_platform_admin()
            or (organization_id in (select public.fn_user_org_ids())
@@ -93,7 +103,8 @@ begin
                     and public.fn_role_at_least(organization_id, 'manager')));
 
   drop policy if exists odontologia_procedimentos_delete on public.odontologia_procedimentos;
-  create policy odontologia_procedimentos_delete on public.odontologia_procedimentos
+  create policy odontologia_procedimentos_delete
+    on public.odontologia_procedimentos
     for delete
     using (public.fn_is_platform_admin()
            or (organization_id in (select public.fn_user_org_ids())
