@@ -9,6 +9,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { EmitirAtestadoDialog } from "@/components/contacts/EmitirAtestadoDialog";
 import { useAuth } from "@/hooks/auth/AuthProvider";
 import { useT } from "@/hooks/i18n/useT";
 import { apiClient } from "@/lib/api/client";
@@ -40,6 +41,7 @@ export function ProntuarioEAnexos({ contactId }: { contactId: string }) {
   const podeRemover = roleAtLeast(activeOrg?.role ?? null, "manager");
   const inputRef = useRef<HTMLInputElement>(null);
   const [erroUpload, setErroUpload] = useState<string | null>(null);
+  const [atestadoAberto, setAtestadoAberto] = useState(false);
 
   const paciente = useQuery({
     queryKey: ["odontologia", "paciente-por-contato", contactId],
@@ -96,12 +98,18 @@ export function ProntuarioEAnexos({ contactId }: { contactId: string }) {
     <div className="space-y-3 rounded-md border border-border p-3" data-testid="prontuario-e-anexos">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{t("Prontuário odontológico")}</h3>
-        <Button asChild size="sm" variant="outline">
-          <a href={`/api/v1/odontologia/pacientes/${pacienteId}/prontuario`} target="_blank" rel="noreferrer">
-            {t("Baixar prontuário em PDF")}
-          </a>
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAtestadoAberto(true)} data-testid="emitir-atestado">
+            {t("Emitir atestado")}
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <a href={`/api/v1/odontologia/pacientes/${pacienteId}/prontuario`} target="_blank" rel="noreferrer">
+              {t("Baixar prontuário em PDF")}
+            </a>
+          </Button>
+        </div>
       </div>
+      <EmitirAtestadoDialog open={atestadoAberto} onOpenChange={setAtestadoAberto} pacienteId={pacienteId} />
 
       <div>
         <div className="flex items-center justify-between">

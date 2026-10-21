@@ -15096,6 +15096,22 @@ export const DICIONARIO: Traducoes = {
   "Documento gerado pelo DeskcommCRM — a assinatura/carimbo é aplicada manualmente após a impressão.": {
     es: "Documento generado por DeskcommCRM — la firma/sello se aplica manualmente después de imprimir.",
   },
+  "Descreva o motivo do atestado.": { es: "Describa el motivo del certificado." },
+  "Informe o nome e o CRO do dentista.": { es: "Indique el nombre y el CRO del dentista." },
+  "Dias de afastamento deve ser um número inteiro positivo.": {
+    es: "Los días de ausencia deben ser un número entero positivo.",
+  },
+  "Não consegui gerar o atestado.": { es: "No pude generar el certificado." },
+  "Emitir atestado": { es: "Emitir certificado" },
+  "Gera um PDF simples, pra imprimir e assinar/carimbar à mão.": {
+    es: "Genera un PDF simple, para imprimir y firmar/sellar a mano.",
+  },
+  "Ex.: foi submetido a procedimento odontológico nesta data.": {
+    es: "Ej.: fue sometido a un procedimiento odontológico en esta fecha.",
+  },
+  "Dias de afastamento (opcional)": { es: "Días de ausencia (opcional)" },
+  "Nome do dentista": { es: "Nombre del dentista" },
+  "Gerar PDF": { es: "Generar PDF" },
   "Nenhuma consulta ainda.": { es: "Ninguna consulta todavía." },
   "Nova consulta": { es: "Nueva consulta" },
   "Próximas": { es: "Próximas" },
