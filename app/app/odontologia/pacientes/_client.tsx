@@ -15,6 +15,7 @@ import { useT } from "@/hooks/i18n/useT";
 import { useTagDeIdioma } from "@/hooks/i18n/useLocaleDeData";
 import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/types";
+import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
 import type { Contact } from "@/lib/types/contacts";
 
 type Resumo = { ultima_consulta: string | null; proximo_retorno: string | null };
@@ -144,7 +145,7 @@ export function Pacientes() {
                       className="underline"
                       data-testid={`paciente-link-${contato.id}`}
                     >
-                      {contato.display_name || contato.name || t("Sem nome")}
+                      {rotuloParaAEquipe(contato, t)}
                     </Link>
                   </td>
                   <td className="p-2 tabular-nums text-text-muted">{contato.phone_number ?? "—"}</td>
