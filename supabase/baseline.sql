@@ -55791,14 +55791,31 @@ create trigger trg_prospeccao_saida_volta_com_a_mensagem
   when (new.status = 'failed' and old.status is distinct from 'failed')
   execute function public.fn_prospeccao_saida_volta_com_a_mensagem();
 
--- ---- odontologia: módulo de tabela via ADR-0002 (migrations 0721/0722/0726) ----
+-- ---- odontologia: módulo de tabela via ADR-0002 (migrations 0721/0722/0726/0727) ----
 -- ⚠️ ANTES DA VARREDURA anon: cria função. Corpo completo e o porquê de cada
 -- decisão (D2/D4/D5/D8) em
 -- supabase/migrations/20261021064447_0721_odontologia_modulo_oficial.sql,
--- supabase/migrations/20261021064448_0722_odontologia_atendimentos.sql e
--- supabase/migrations/20261021181312_0726_odontologia_pacientes.sql —
+-- supabase/migrations/20261021064448_0722_odontologia_atendimentos.sql,
+-- supabase/migrations/20261021181312_0726_odontologia_pacientes.sql e
+-- supabase/migrations/20261021193431_0727_odontologia_prontuario_anexos.sql —
 -- criar a função aqui NÃO cria tabela nenhuma; as tabelas só nascem quando um
 -- administrador da instalação chama fn_modulo_instalar('odontologia', ...).
+--
+-- O bucket `odontologia-anexos` (migration 0727) é criado incondicionalmente, fora da
+-- provisionadora — mesmo precedente de `brand-logos`/`ai-policy` acima: bucket não é tabela
+-- (D2/D3 é regra de tabela), e um bucket vazio sem o módulo instalado não custa nada.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'odontologia-anexos',
+  'odontologia-anexos',
+  false,
+  10485760, -- 10 MB
+  array['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
+)
+on conflict (id) do update
+  set public             = excluded.public,
+      file_size_limit    = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
 
 create or replace function public.fn_odontologia_provisionar()
 returns void
@@ -56089,6 +56106,62 @@ begin
       order by a.organization_id, a.contact_id, a.created_at asc
     on conflict (organization_id, contact_id) do nothing;
 
+
+  -- ── odontologia_prontuario_anexos (Fatia 7) ────────────────────
+  create table if not exists public.odontologia_prontuario_anexos (
+    id uuid primary key default gen_random_uuid(),
+    organization_id uuid not null references public.organizations(id) on delete cascade,
+    paciente_id uuid not null references public.odontologia_pacientes(id) on delete cascade,
+
+    -- Caminho em storage/odontologia-anexos, sempre <organization_id>/<paciente_id>/<uuid>.<ext>.
+    storage_path text not null,
+    nome_arquivo text not null check (btrim(nome_arquivo) <> ''),
+    tipo_mime text not null,
+    tamanho_bytes bigint not null check (tamanho_bytes > 0),
+
+    created_by uuid references auth.users(id) on delete set null,
+    created_at timestamptz not null default now()
+  );
+
+  create index if not exists odontologia_prontuario_anexos_org_idx
+    on public.odontologia_prontuario_anexos (organization_id);
+  create index if not exists odontologia_prontuario_anexos_paciente_idx
+    on public.odontologia_prontuario_anexos (organization_id, paciente_id, created_at desc);
+
+  alter table public.odontologia_prontuario_anexos enable row level security;
+  drop policy if exists tenant_isolation_odontologia_prontuario_anexos_all on public.odontologia_prontuario_anexos;
+
+  drop policy if exists odontologia_prontuario_anexos_select on public.odontologia_prontuario_anexos;
+  create policy odontologia_prontuario_anexos_select
+    on public.odontologia_prontuario_anexos
+    for select using (
+      organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+    );
+
+  drop policy if exists odontologia_prontuario_anexos_insert on public.odontologia_prontuario_anexos;
+  -- `agent`+ anexa — mesmo degrau de quem registra o atendimento que o exame acompanha.
+  create policy odontologia_prontuario_anexos_insert
+    on public.odontologia_prontuario_anexos
+    for insert
+    with check (public.fn_is_platform_admin()
+                or (organization_id in (select public.fn_user_org_ids())
+                    and public.fn_role_at_least(organization_id, 'agent')
+                    and exists (select 1 from public.odontologia_pacientes p
+                                 where p.id = paciente_id and p.organization_id = odontologia_prontuario_anexos.organization_id)));
+
+  drop policy if exists odontologia_prontuario_anexos_delete on public.odontologia_prontuario_anexos;
+  -- `manager`+ remove — anexo errado é correção, mesma régua do resto do módulo. Sem UPDATE:
+  -- arquivo não se edita, só se substitui (apaga e sobe outro).
+  create policy odontologia_prontuario_anexos_delete
+    on public.odontologia_prontuario_anexos
+    for delete
+    using (public.fn_is_platform_admin()
+           or (organization_id in (select public.fn_user_org_ids())
+               and public.fn_role_at_least(organization_id, 'manager')));
+  revoke all on public.odontologia_prontuario_anexos from anon;
+
+  comment on table public.odontologia_prontuario_anexos is
+    'Anexos do prontuário (exame, raio-x, prontuário externo escaneado) — o arquivo mora em storage/odontologia-anexos, esta linha só referencia (DIRC). Leitura para a organização; agent+ anexa; manager+ remove. ⚠️ A redação de LGPD na anonimização do contato AINDA NÃO alcança este bucket — ver o cabeçalho da migration 0727.';
   -- ── LGPD (D8, migration 0485): declara a seção, numa função PRÓPRIA ─────
   -- `fn_odontologia_declarar_secoes_lgpd()` e não um `insert` aqui dentro: o
   -- molde de forma da D4 (`tests/invariants/molde-de-provisionadora.ts`,
