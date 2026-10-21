@@ -15070,6 +15070,11 @@ export const DICIONARIO: Traducoes = {
   "Novo paciente": { es: "Nuevo paciente" },
   "Nenhum paciente encontrado.": { es: "Ningún paciente encontrado." },
   "Não foi possível carregar os pacientes.": { es: "No fue posible cargar los pacientes." },
+  "Cadastrar um contato já existente como paciente": {
+    es: "Registrar un contacto ya existente como paciente",
+  },
+  "Buscar por nome ou telefone": { es: "Buscar por nombre o teléfono" },
+  "Cadastrar como paciente": { es: "Registrar como paciente" },
   "Histórico de consultas": { es: "Historial de consultas" },
   "Nenhuma consulta ainda.": { es: "Ninguna consulta todavía." },
   "Nova consulta": { es: "Nueva consulta" },

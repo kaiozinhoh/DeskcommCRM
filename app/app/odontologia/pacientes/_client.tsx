@@ -1,12 +1,13 @@
 "use client";
 /**
- * Pacientes — os MESMOS `contacts` do núcleo, com vocabulário de clínica. Módulo opcional
- * Odontologia (ADR-0002, Fatia 5). Criar/editar paciente usa as rotas e schemas de contatos
- * existentes (`NewContactDialog`) — nenhuma tabela nova aqui.
+ * Pacientes — cadastro PRÓPRIO, separado do Contato (Fatia 6, migration 0726). Só aparece aqui
+ * quem tem o cadastro de paciente — não é mais todo `contacts` da organização (Fatia 5). Criar
+ * um paciente novo ainda reaproveita o schema de contato (`NewContactDialog`); cadastrar um
+ * contato JÁ existente usa a busca abaixo.
  */
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ChipDeEtiqueta } from "@/components/tags/ChipDeEtiqueta";
 import { NewContactDialog } from "@/components/contacts/NewContactDialog";
@@ -18,45 +19,95 @@ import { ApiError } from "@/lib/api/types";
 import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
 import type { Contact } from "@/lib/types/contacts";
 
+interface ContatoResumo {
+  id: string;
+  name: string | null;
+  display_name: string | null;
+  phone_number: string | null;
+  tags: string[] | null;
+}
+interface PacienteLinha {
+  id: string;
+  contact_id: string;
+  ativo: boolean;
+  created_at: string;
+  contact: ContatoResumo | null;
+}
 type Resumo = { ultima_consulta: string | null; proximo_retorno: string | null };
 type Ordenacao = "nome" | "ultima_consulta" | "proximo_retorno";
 
 export function Pacientes() {
   const t = useT();
   const tagDoIdioma = useTagDeIdioma();
+  const qc = useQueryClient();
   const [busca, setBusca] = useState("");
   const [tag, setTag] = useState("");
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("nome");
   const [novoPacienteAberto, setNovoPacienteAberto] = useState(false);
+  const [buscaCadastro, setBuscaCadastro] = useState("");
 
-  const contatos = useQuery({
-    queryKey: ["odontologia", "pacientes", busca, tag],
-    queryFn: async () => {
-      const parametros = new URLSearchParams({ limit: "100", order_by: "display_name" });
-      if (busca.trim()) parametros.set("search", busca.trim());
-      if (tag.trim()) parametros.append("tag", tag.trim());
-      return (await apiClient.get<{ data: Contact[] }>(`/api/v1/contacts?${parametros}`)).data;
-    },
+  const pacientes = useQuery({
+    queryKey: ["odontologia", "pacientes"],
+    queryFn: async () =>
+      (await apiClient.get<{ data: PacienteLinha[] }>(`/api/v1/odontologia/pacientes?ativo=true`))
+        .data,
     retry: false,
   });
 
-  const ids = (contatos.data ?? []).map((c) => c.id);
+  const contactIds = (pacientes.data ?? []).map((p) => p.contact_id);
   const resumo = useQuery({
-    queryKey: ["odontologia", "atendimentos", "resumo", ids],
-    enabled: ids.length > 0,
+    queryKey: ["odontologia", "atendimentos", "resumo", contactIds],
+    enabled: contactIds.length > 0,
     queryFn: async () =>
       (
         await apiClient.get<{ data: Record<string, Resumo> }>(
-          `/api/v1/odontologia/atendimentos/resumo?contact_ids=${ids.join(",")}`,
+          `/api/v1/odontologia/atendimentos/resumo?contact_ids=${contactIds.join(",")}`,
         )
       ).data,
   });
 
+  const cadastrar = useMutation({
+    mutationFn: (contactId: string) =>
+      apiClient.post<{ data: { id: string } }>("/api/v1/odontologia/pacientes", {
+        contact_id: contactId,
+      }),
+    onSuccess: () => {
+      setBuscaCadastro("");
+      void qc.invalidateQueries({ queryKey: ["odontologia", "pacientes"] });
+    },
+  });
+
+  // Contatos que ainda NÃO são pacientes, para a busca de cadastro — só dispara com texto.
+  const contatosParaCadastro = useQuery({
+    queryKey: ["odontologia", "contatos-para-cadastro", buscaCadastro],
+    enabled: buscaCadastro.trim().length > 0,
+    queryFn: async () =>
+      (
+        await apiClient.get<{ data: Contact[] }>(
+          `/api/v1/contacts?search=${encodeURIComponent(buscaCadastro.trim())}&limit=10`,
+        )
+      ).data,
+  });
+  const jaSaoPacientes = new Set((pacientes.data ?? []).map((p) => p.contact_id));
+  const resultadosCadastro = (contatosParaCadastro.data ?? []).filter((c) => !jaSaoPacientes.has(c.id));
+
   const linhas = useMemo(() => {
-    const lista = (contatos.data ?? []).map((c) => ({
-      contato: c,
-      resumo: resumo.data?.[c.id] ?? { ultima_consulta: null, proximo_retorno: null },
-    }));
+    const lista = (pacientes.data ?? [])
+      .filter((p) => p.contact !== null)
+      .map((p) => ({
+        paciente: p,
+        contato: p.contact as ContatoResumo,
+        resumo: resumo.data?.[p.contact_id] ?? { ultima_consulta: null, proximo_retorno: null },
+      }))
+      .filter(({ contato }) => {
+        if (tag.trim() && !(contato.tags ?? []).includes(tag.trim())) return false;
+        if (!busca.trim()) return true;
+        const termo = busca.trim().toLowerCase();
+        return (
+          (contato.display_name ?? contato.name ?? "").toLowerCase().includes(termo) ||
+          (contato.phone_number ?? "").includes(termo)
+        );
+      });
     if (ordenacao === "nome") return lista;
     return [...lista].sort((a, b) => {
       const va = a.resumo[ordenacao] ?? "";
@@ -66,18 +117,18 @@ export function Pacientes() {
       if (!vb) return -1;
       return ordenacao === "ultima_consulta" ? vb.localeCompare(va) : va.localeCompare(vb);
     });
-  }, [contatos.data, resumo.data, ordenacao]);
+  }, [pacientes.data, resumo.data, ordenacao, busca, tag]);
 
   const naoInstalado =
-    contatos.error instanceof ApiError && contatos.error.code === "module_not_installed";
+    pacientes.error instanceof ApiError && pacientes.error.code === "module_not_installed";
   if (naoInstalado) {
     return (
       <p className="rounded-md border border-border p-3 text-sm text-text-muted" role="status">
-        {(contatos.error as ApiError).message}
+        {(pacientes.error as ApiError).message}
       </p>
     );
   }
-  if (contatos.isError) {
+  if (pacientes.isError) {
     return <p className="text-sm text-danger">{t("Não foi possível carregar os pacientes.")}</p>;
   }
 
@@ -122,6 +173,41 @@ export function Pacientes() {
         </Button>
       </div>
 
+      <div className="rounded-md border border-border p-3">
+        <label className="flex flex-col gap-1 text-xs text-text-muted">
+          {t("Cadastrar um contato já existente como paciente")}
+          <input
+            value={buscaCadastro}
+            data-testid="cadastro-busca-contato"
+            placeholder={t("Buscar por nome ou telefone")}
+            onChange={(e) => setBuscaCadastro(e.target.value)}
+            className="w-80 rounded-md border border-border bg-surface-elevated p-2 text-sm text-text"
+          />
+        </label>
+        {buscaCadastro.trim() && (
+          <ul className="mt-2 flex flex-col gap-1">
+            {resultadosCadastro.length === 0 ? (
+              <li className="text-sm text-text-muted">{t("Nenhum contato encontrado.")}</li>
+            ) : (
+              resultadosCadastro.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span>{rotuloParaAEquipe(c, t)}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={cadastrar.isPending}
+                    onClick={() => cadastrar.mutate(c.id)}
+                    data-testid={`cadastrar-${c.id}`}
+                  >
+                    {t("Cadastrar como paciente")}
+                  </Button>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </div>
+
       <section className="min-h-0 flex-1 overflow-auto rounded-md border border-border">
         {linhas.length === 0 ? (
           <p className="p-3 text-sm text-text-muted">{t("Nenhum paciente encontrado.")}</p>
@@ -137,13 +223,13 @@ export function Pacientes() {
               </tr>
             </thead>
             <tbody>
-              {linhas.map(({ contato, resumo: r }) => (
-                <tr key={contato.id} className="border-b border-border/60" data-testid={`paciente-${contato.id}`}>
+              {linhas.map(({ paciente, contato, resumo: r }) => (
+                <tr key={paciente.id} className="border-b border-border/60" data-testid={`paciente-${paciente.id}`}>
                   <td className="p-2">
                     <Link
-                      href={`/app/odontologia/pacientes/${contato.id}`}
+                      href={`/app/odontologia/pacientes/${paciente.id}`}
                       className="underline"
-                      data-testid={`paciente-link-${contato.id}`}
+                      data-testid={`paciente-link-${paciente.id}`}
                     >
                       {rotuloParaAEquipe(contato, t)}
                     </Link>
@@ -176,7 +262,7 @@ export function Pacientes() {
       <NewContactDialog
         open={novoPacienteAberto}
         onOpenChange={setNovoPacienteAberto}
-        onCriado={() => void contatos.refetch()}
+        onCriado={(novoContato) => cadastrar.mutate(novoContato.id)}
       />
     </div>
   );
