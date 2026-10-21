@@ -32,7 +32,7 @@ export function Pacientes() {
   const contatos = useQuery({
     queryKey: ["odontologia", "pacientes", busca, tag],
     queryFn: async () => {
-      const parametros = new URLSearchParams({ limit: "100", order_by: "name" });
+      const parametros = new URLSearchParams({ limit: "100", order_by: "display_name" });
       if (busca.trim()) parametros.set("search", busca.trim());
       if (tag.trim()) parametros.append("tag", tag.trim());
       return (await apiClient.get<{ data: Contact[] }>(`/api/v1/contacts?${parametros}`)).data;
