@@ -93,6 +93,8 @@ export const O_QUE_FICA = {
   leads: "as oportunidades abertas para ele: título, estado e valor",
   honorarios_contratos: "o contrato de honorários dele (sem a divisão interna do escritório)",
   honorarios_parcelas: "as parcelas que ele paga",
+  odontologia_atendimentos:
+    "os atendimentos odontológicos dele: procedimentos, dentista, dente/região, status e valor cobrado (sem a observação clínica interna da equipe)",
   orders: "os pedidos dele na loja",
   activities: "o que foi registrado sobre ele e quando",
   checkpoints: "o resumo que a máquina fez da conversa com ele (LGPD art. 20)",
@@ -148,6 +150,9 @@ const TEXTO_DA_IA_NO_CASO =
 export const CAMPOS_DA_EQUIPE: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   honorarios_contratos: {
     repasse_advogado_pct: "quanto o escritório repassa ao advogado: divisão interna, não dado dele",
+  },
+  odontologia_atendimentos: {
+    observacao: "nota clínica interna da equipe sobre o atendimento, não composta para ele",
   },
   meeting_deliveries: { run_after: "quando a fila interna vai tentar de novo" },
   activities: { source_module: "telemetria: qual módulo do sistema registrou a atividade" },

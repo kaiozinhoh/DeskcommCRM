@@ -15046,6 +15046,47 @@ export const DICIONARIO: Traducoes = {
   "Contrato de honorários (fixo, êxito ou misto) e o calendário de parcelas, ligado ao caixa do núcleo. Para escritórios de advocacia que cobram por caso.": {
     es: "Contrato de honorarios (fijo, éxito o mixto) y el calendario de cuotas, vinculado a la caja del núcleo. Para despachos de abogados que cobran por caso.",
   },
+  "Odontologia": { es: "Odontología" },
+  "Pacientes, procedimentos e histórico de atendimentos ligados à agenda. Para clínicas odontológicas.": {
+    es: "Pacientes, procedimientos e historial de atenciones vinculados a la agenda. Para clínicas odontológicas.",
+  },
+  "Procedimentos": { es: "Procedimientos" },
+  "O cadastro de procedimentos da clínica: nome, duração padrão e valor de referência.": {
+    es: "El registro de procedimientos de la clínica: nombre, duración estándar y valor de referencia.",
+  },
+  "Os contatos da organização com vocabulário de clínica: consultas, procedimentos e retorno.": {
+    es: "Los contactos de la organización con vocabulario de clínica: consultas, procedimientos y retorno.",
+  },
+  "Nenhum procedimento ainda.": { es: "Ningún procedimiento todavía." },
+  "Pacientes": { es: "Pacientes" },
+  "Os contatos da organização: busca, tags, última consulta e próximo retorno.": {
+    es: "Los contactos de la organización: búsqueda, etiquetas, última consulta y próximo retorno.",
+  },
+  "Nome ou telefone": { es: "Nombre o teléfono" },
+  "filtrar por tag": { es: "filtrar por etiqueta" },
+  "Ordenar por": { es: "Ordenar por" },
+  "Última consulta": { es: "Última consulta" },
+  "Próximo retorno": { es: "Próximo retorno" },
+  "Novo paciente": { es: "Nuevo paciente" },
+  "Nenhum paciente encontrado.": { es: "Ningún paciente encontrado." },
+  "Não foi possível carregar os pacientes.": { es: "No fue posible cargar los pacientes." },
+  "Histórico de consultas": { es: "Historial de consultas" },
+  "Nenhuma consulta ainda.": { es: "Ninguna consulta todavía." },
+  "Nova consulta": { es: "Nueva consulta" },
+  "Próximas": { es: "Próximas" },
+  "Agendado": { es: "Agendado" },
+  "Dente/região": { es: "Diente/región" },
+  "Sem procedimento previsto": { es: "Sin procedimiento previsto" },
+  "Valor cobrado": { es: "Valor cobrado" },
+  "Registrar atendimento": { es: "Registrar atención" },
+  "Marcar faltou": { es: "Marcar ausencia" },
+  "Este registro não substitui o prontuário da clínica.": {
+    es: "Este registro no sustituye la ficha clínica.",
+  },
+  "Não foi possível carregar os procedimentos.": { es: "No fue posible cargar los procedimientos." },
+  "Duração (min)": { es: "Duración (min)" },
+  "Valor de referência": { es: "Valor de referencia" },
+  "Criar procedimento": { es: "Crear procedimiento" },
   "Módulos opcionais com tabela própria, criados quando você instala — quem não instala não carrega as tabelas dele. Instalar aqui vale para todas as organizações desta instalação.": {
     es: "Módulos opcionales con tabla propia, creados cuando los instalas — quien no instala no carga sus tablas. Instalar aquí vale para todas las organizaciones de esta instalación.",
   },
@@ -15459,6 +15500,9 @@ export const DICIONARIO: Traducoes = {
   "A IA monta a proposta pelos modelos da empresa e o PDF sai pelo WhatsApp.": { es: "La IA arma la propuesta con las plantillas de la empresa y el PDF sale por WhatsApp." },
   "Cadastro de empresas por CNPJ, das pessoas que decidem nelas e importação de planilha.": { es: "Registro de empresas por CNPJ, de las personas que deciden en ellas e importación de planillas." },
   "Contratos de honorários com parcelas e o controle do que já foi pago.": { es: "Contratos de honorarios con cuotas y el control de lo que ya se pagó." },
+  "Pacientes, procedimentos e histórico de atendimentos ligados à agenda, para clínicas odontológicas.": {
+    es: "Pacientes, procedimientos e historial de atenciones vinculados a la agenda, para clínicas odontológicas.",
+  },
   // #1907 item 4 — a linha do módulo `financeiro` em `MODULOS_OPCIONAIS`
   // (`lib/recursos-opcionais/catalogo.ts:124`). Enquanto faltava, o módulo
   // entrava na lista nova pelo TEXTO_DO_MODULO sem nenhuma linha aqui.

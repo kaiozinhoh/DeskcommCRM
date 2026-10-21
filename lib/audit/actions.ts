@@ -1191,6 +1191,14 @@ export const AUDIT_ACTIONS = [
   // Inscrição de push removida no servidor: desligar os alertas, sair, ou
   // "sair de todos os dispositivos" (metadata.escopo diz qual).
   "notification_prefs.push_subscription_removed",
+  // Odontologia (módulo de tabela, ADR-0002, migration 0721) — cadastro de procedimentos.
+  "odontologia.procedimento_criado",
+  "odontologia.procedimento_atualizado",
+  "odontologia.procedimento_arquivado",
+  // Odontologia (migration 0722) — atendimentos ligados à agenda.
+  "odontologia.atendimento_agendado",
+  "odontologia.atendimento_registrado",
+  "odontologia.atendimento_corrigido",
 ] as const;
 
 /** Um código de auditoria. Derivado de `AUDIT_ACTIONS` — não redigite a lista. */

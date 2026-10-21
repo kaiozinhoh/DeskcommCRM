@@ -26,6 +26,7 @@ function payload(): ExportPayload {
     leads: [],
     honorarios_contratos: [],
     honorarios_parcelas: [],
+    odontologia_atendimentos: [],
     orders: [],
     activities: [],
     appointments: [],

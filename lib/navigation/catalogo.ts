@@ -260,6 +260,32 @@ export const NAV_CATALOG = [
     sidebar: true,
   },
   {
+    // Módulo de tabela (ADR-0002, migrations 0706/0707): procedimentos, atendimentos
+    // ligados à agenda e a ficha do paciente sobre os MESMOS `contacts` do núcleo —
+    // não duplica a tabela de contatos. Mesmo mecanismo de "/app/honorarios".
+    href: "/app/odontologia/pacientes",
+    label: "Pacientes",
+    description: "Os contatos da organização com vocabulário de clínica: consultas, procedimentos e retorno.",
+    icon: "Tooth",
+    group: "crm",
+    section: "O dia a dia da venda",
+    // SEM sidebar, de propósito (tests/unit/porta-do-modulo-ligado.test.tsx tem o controle de
+    // vivacidade): toda porta de módulo hoje mora no hub ("Ver tudo em CRM"), e o sidebar do
+    // CRM fica deliberadamente curto (kanban/contatos/tarefas). Subir ao menu lateral pediria
+    // revisar o texto de "onde encontrar" em todo lugar que cita o passo do hub.
+    modulo: "odontologia",
+  },
+  {
+    href: "/app/odontologia/procedimentos",
+    label: "Procedimentos",
+    description: "O cadastro de procedimentos da clínica: nome, duração padrão e valor de referência.",
+    icon: "ListChecks",
+    group: "organizacao",
+    section: "Sua empresa",
+    minRole: "manager",
+    modulo: "odontologia",
+  },
+  {
     href: "/app/companies",
     label: "Empresas",
     description: "Cadastro B2B — razão social, CNPJ e decisores.",

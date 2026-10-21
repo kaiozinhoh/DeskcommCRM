@@ -65,6 +65,7 @@ function payload(patch: Partial<ExportPayload> = {}): ExportPayload {
     leads: [],
     honorarios_contratos: [],
     honorarios_parcelas: [],
+    odontologia_atendimentos: [],
     orders: [],
     activities: [],
     appointments: [],

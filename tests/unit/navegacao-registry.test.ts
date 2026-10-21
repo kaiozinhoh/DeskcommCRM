@@ -179,6 +179,9 @@ describe("hubSections", () => {
       "/app/kanban",
       "/app/campaigns",
       "/app/contacts",
+      // Módulo opcional Odontologia (ADR-0002, Fatia 5): mesmo lugar de Empresas/Pessoas
+      // (crm_b2b) — porta de módulo mora no hub, nunca no sidebar (ver porta-do-modulo-ligado).
+      "/app/odontologia/pacientes",
       "/app/companies",
       "/app/people",
       "/app/tasks",

@@ -209,6 +209,29 @@ const PROVA_DE_MODULO: Record<string, { readonly arquivo: string; readonly razao
       "lista org-scoped: vizinho vê zero movimentações. A leitura é medida aqui; a decisão de " +
       "NÃO redigir (razão `manter` do #1504) mora no redact-unificado, e é outra régua.",
   },
+  // Odontologia (migrations 0721/0722) — procedimentos (Fatia 1) e atendimentos (Fatia 3).
+  odontologia_procedimentos: {
+    arquivo: "tests/invariants/odontologia-rls-por-operacao.test.ts",
+    razao:
+      "JWT real (`set role authenticated` + claims): viewer e agent não criam, não editam e " +
+      "não apagam procedimento (manager escreve, controle positivo); manager não pendura nem " +
+      "edita procedimento de OUTRA organização (recusa cross-org na própria RLS). A leitura " +
+      "cross-org por contagem é medida neste arquivo.",
+  },
+  odontologia_atendimentos: {
+    arquivo: "tests/invariants/odontologia-rls-por-operacao.test.ts",
+    razao:
+      "JWT real: viewer lê mas não registra nem edita; agent registra (cria e marca " +
+      "concluído/faltou, controle positivo) e não cria atendimento com contato de outra " +
+      "organização (recusa cross-org na própria FK); nem manager apaga pela sessão (sem " +
+      "policy de delete). A leitura cross-org por contagem é medida neste arquivo.",
+  },
+  odontologia_atendimento_procedimentos: {
+    arquivo: "tests/invariants/odontologia-rls-por-operacao.test.ts",
+    razao:
+      "JWT real: agent associa um procedimento ao atendimento (controle positivo) e não " +
+      "remove — remover é correção, manager+ (controle positivo medido na mesma linha).",
+  },
 };
 
 /* ── probe 1: a varredura de RLS, copiada do irmão (rls-completude-varredura.test.ts) ── */

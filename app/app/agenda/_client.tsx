@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 import { EntradaDaAgenda } from "@/components/agenda/EntradaDaAgenda";
 import { EnderecoDaMarcacao } from "@/components/agenda/EnderecoDaMarcacao";
@@ -40,6 +41,9 @@ import {
   useRemarcarAgendamento,
 } from "@/hooks/agenda/useRemarcarAgendamento";
 import { usePessoasDaAgenda } from "@/hooks/agenda/usePessoasDaAgenda";
+import { useAuth } from "@/hooks/auth/AuthProvider";
+import { apiClient } from "@/lib/api/client";
+import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { CalendarPlus, CaretLeft, CaretRight } from "@/lib/ui/icons";
 import { cn } from "@/lib/utils";
 
@@ -252,6 +256,41 @@ export function AgendaClient({
     [busca, caminho],
   );
   const endereco = enderecoEditado ?? tipo?.localDetalhes ?? "";
+
+  // ── Odontologia (módulo opcional, ADR-0002, Fatia 4) ───────────────────────
+  // Mesmo mecanismo de `AtendimentoOdontologico.tsx`/`QueueTab.tsx`: o módulo
+  // ligado chega por `activeOrg.modulos_ligados`, sem prop nova. Sem o módulo
+  // instalado, esta seção não busca nada e não renderiza nada — a tela fica
+  // idêntica à de hoje.
+  const { activeOrg } = useAuth();
+  const moduloOdontologiaInstalado = activeOrg?.modulos_ligados?.includes("odontologia") === true;
+  const procedimentos = useQuery({
+    queryKey: ["odontologia", "procedimentos", "ativos"],
+    enabled: moduloOdontologiaInstalado,
+    queryFn: async () =>
+      (
+        await apiClient.get<{ data: { id: string; nome: string }[] }>(
+          "/api/v1/odontologia/procedimentos?ativo=true",
+        )
+      ).data,
+  });
+  // MESMO padrão de `tipoId`/`escolherTipo` acima: vive na URL (`?procedimento=`),
+  // lido no inicializador para primeira pintura e recarregamento concordarem.
+  const [procedimentoId, setProcedimentoId] = React.useState<string | null>(
+    () => busca.get("procedimento") ?? null,
+  );
+  const escolherProcedimento = React.useCallback(
+    (id: string | null) => {
+      setProcedimentoId(id);
+      const parametros = new URLSearchParams(busca.toString());
+      if (id) parametros.set("procedimento", id);
+      else parametros.delete("procedimento");
+      const query = parametros.toString();
+      window.history.replaceState(null, "", query ? `${caminho}?${query}` : caminho);
+    },
+    [busca, caminho],
+  );
+
   const [visao, setVisao] = React.useState<VisaoDaAgenda>("semana");
   /**
    * No CELULAR a agenda abre no DIA, não na semana.
@@ -786,6 +825,39 @@ export function AgendaClient({
               </div>
             )}
             {/*
+              PROCEDIMENTO — módulo opcional Odontologia (Fatia 4). Só aparece
+              marcando do zero (não ao remarcar: o atendimento já nasceu com o
+              compromisso original) e só com o módulo instalado e procedimentos
+              cadastrados. O escolhido fica gravado como "procedimento previsto"
+              do atendimento, criado junto com o compromisso em `onConfirmar`.
+            */}
+            {!remarcandoId && moduloOdontologiaInstalado && (procedimentos.data?.length ?? 0) > 0 ? (
+              <div className="lg:col-span-2" data-testid="procedimentos-da-marcacao">
+                <p className="mb-2 text-sm font-medium">{t("Procedimento")}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {procedimentos.data!.map((opcao) => (
+                    <button
+                      key={opcao.id}
+                      type="button"
+                      data-testid={`procedimento-marcacao-${opcao.id}`}
+                      aria-pressed={opcao.id === procedimentoId}
+                      onClick={() =>
+                        escolherProcedimento(opcao.id === procedimentoId ? null : opcao.id)
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs transition-colors duration-fast",
+                        opcao.id === procedimentoId
+                          ? "border-transparent bg-accent text-accent-foreground"
+                          : "border-border text-text-muted hover:border-border-strong hover:text-text",
+                      )}
+                    >
+                      {opcao.nome}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {/*
               O CONVIDADO — opcional. O e-mail da ficha do cliente já entra no
               convite do Google; este campo é para outra pessoa (acompanhante).
               Sem os dois, o evento nasce só na agenda do atendente — o lembrete
@@ -958,12 +1030,31 @@ export function AgendaClient({
                       location_details: endereco.trim(),
                       description: observacao.trim() || undefined,
                     })
-                    .then((r) => {
+                    .then(async (r) => {
                       setEmailConvidado("");
                       setEnderecoEditado(null);
                       setObservacao("");
                       // Guardado para o fechamento saber para onde levar a grade.
                       setMarcadoEm(instante);
+                      // Odontologia (módulo opcional, Fatia 4): o atendimento PREVISTO
+                      // nasce junto com o compromisso, ligado por `appointment_id` — sem
+                      // contato não há paciente para o atendimento (compromisso
+                      // pessoal), e sem isso a falha não desfaz a marcação: o
+                      // compromisso já existe, só o registro odontológico ficaria para
+                      // a ficha do paciente depois.
+                      if (moduloOdontologiaInstalado && contactId) {
+                        try {
+                          await apiClient.post("/api/v1/odontologia/atendimentos", {
+                            contact_id: contactId,
+                            appointment_id: r.data.id,
+                            data_hora: instante,
+                            status: "agendado",
+                            procedimento_ids: procedimentoId ? [procedimentoId] : [],
+                          });
+                        } catch (erro) {
+                          showApiError(erro);
+                        }
+                      }
                       return r;
                     });
                 }}
