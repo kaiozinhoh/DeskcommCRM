@@ -60,6 +60,10 @@ export const MODULOS_OPCIONAIS = [
   // provisionadora (`fn_financeiro_provisionar`) só roda onde o módulo está
   // instalado. `MODULOS_DE_TABELA` abaixo é o que faz `moduloLigado` enxergá-lo.
   "financeiro",
+  // Clínica odontológica: procedimentos (esta fatia) e, nas próximas, atendimentos ligados à
+  // agenda e a ficha de paciente sobre `contacts`. Mesmo mecanismo de `honorarios`/`financeiro`
+  // — nasce em `modulos_instalados` via `fn_odontologia_provisionar`.
+  "odontologia",
   "cobranca",
   "login_codex",
 ] as const;
@@ -67,7 +71,7 @@ export type ModuloOpcional = (typeof MODULOS_OPCIONAIS)[number];
 
 /** Os módulos de tabela do ADR-0002 dentro de `MODULOS_OPCIONAIS` — resolvidos por
  * `modulos_instalados.estado = 'ativo'`, nunca por `platform_config`. */
-const MODULOS_DE_TABELA = ["honorarios", "financeiro"] as const satisfies readonly ModuloOpcional[];
+const MODULOS_DE_TABELA = ["honorarios", "financeiro", "odontologia"] as const satisfies readonly ModuloOpcional[];
 
 /**
  * Só os módulos por FLAG — os que a tela `/admin/sistema` liga e desliga via

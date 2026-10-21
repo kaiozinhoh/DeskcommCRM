@@ -35,6 +35,13 @@ export const CATALOGO_DE_MODULOS: readonly ModuloCatalogo[] = [
       "continua no sistema mesmo sem este módulo. Toda instalação anterior a esta versão " +
       "continua com Comandas ligada.",
   },
+  {
+    slug: "odontologia",
+    nome: "Odontologia",
+    descricao:
+      "Pacientes, procedimentos e histórico de atendimentos ligados à agenda. Para clínicas " +
+      "odontológicas.",
+  },
 ];
 
 export function moduloDoCatalogo(slug: string): ModuloCatalogo | undefined {
