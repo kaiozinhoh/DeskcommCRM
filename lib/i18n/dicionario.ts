@@ -15086,6 +15086,16 @@ export const DICIONARIO: Traducoes = {
   "Anexos": { es: "Adjuntos" },
   "Anexar arquivo": { es: "Adjuntar archivo" },
   "Nenhum anexo ainda.": { es: "Ningún adjunto todavía." },
+  "Atestado odontológico": { es: "Certificado odontológico" },
+  "Atesto, para os devidos fins, que": { es: "Certifico, para los fines pertinentes, que" },
+  "Necessita de afastamento de suas atividades por": {
+    es: "Necesita ausentarse de sus actividades por",
+  },
+  "a partir desta data": { es: "a partir de esta fecha" },
+  "CRO": { es: "CRO" },
+  "Documento gerado pelo DeskcommCRM — a assinatura/carimbo é aplicada manualmente após a impressão.": {
+    es: "Documento generado por DeskcommCRM — la firma/sello se aplica manualmente después de imprimir.",
+  },
   "Nenhuma consulta ainda.": { es: "Ninguna consulta todavía." },
   "Nova consulta": { es: "Nueva consulta" },
   "Próximas": { es: "Próximas" },

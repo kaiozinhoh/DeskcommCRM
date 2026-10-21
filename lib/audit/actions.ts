@@ -1206,6 +1206,8 @@ export const AUDIT_ACTIONS = [
   // Odontologia (migration 0727) — anexos do prontuário.
   "odontologia.prontuario_anexo_criado",
   "odontologia.prontuario_anexo_removido",
+  // Odontologia (Fatia 8) — atestado em PDF, sem tabela (nasce e acaba na resposta).
+  "odontologia.atestado_emitido",
 ] as const;
 
 /** Um código de auditoria. Derivado de `AUDIT_ACTIONS` — não redigite a lista. */
