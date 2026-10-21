@@ -56073,6 +56073,22 @@ begin
 
   comment on table public.odontologia_pacientes is
     'O cadastro de Paciente — separado do Contato (DIRC: Referenciar, nunca duplicar nome/telefone). Um contato só é paciente quando esta linha existe. Leitura para a organização; agent+ cria (manual ou automático no primeiro atendimento); manager+ arquiva/reativa. Sem DELETE — nunca hard-delete.';
+
+  -- ── Backfill: quem JÁ tinha atendimento antes desta migration ────────────
+  -- `odontologia_atendimentos` nasceu na 0722 sem depender de `odontologia_pacientes`
+  -- (que só existe a partir daqui). Clone que já instalou o módulo e já registrou
+  -- atendimento tem gente com histórico e SEM o cadastro novo — sem este passo, essas
+  -- pessoas somem da lista de Pacientes (que passa a ler só esta tabela). `distinct
+  -- on` + o atendimento mais ANTIGO por contato: o paciente nasce "como se" tivesse
+  -- sido cadastrado desde o primeiro atendimento, não a partir de hoje. Roda sempre —
+  -- idempotente pelo `on conflict do nothing` (D6: reaplicar converge, nunca duplica).
+  insert into public.odontologia_pacientes (organization_id, contact_id, created_by, created_at)
+    select distinct on (a.organization_id, a.contact_id)
+        a.organization_id, a.contact_id, a.created_by, a.created_at
+      from public.odontologia_atendimentos a
+      order by a.organization_id, a.contact_id, a.created_at asc
+    on conflict (organization_id, contact_id) do nothing;
+
   -- ── LGPD (D8, migration 0485): declara a seção, numa função PRÓPRIA ─────
   -- `fn_odontologia_declarar_secoes_lgpd()` e não um `insert` aqui dentro: o
   -- molde de forma da D4 (`tests/invariants/molde-de-provisionadora.ts`,
