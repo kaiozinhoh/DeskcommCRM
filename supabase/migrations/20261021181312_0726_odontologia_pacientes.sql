@@ -58,6 +58,13 @@ begin
   drop policy if exists tenant_isolation_odontologia_procedimentos_all on public.odontologia_procedimentos;
 
   drop policy if exists odontologia_procedimentos_select on public.odontologia_procedimentos;
+  -- Cada `create policy` deste corpo ocupa DUAS linhas de propósito (#1906). O
+  -- `update.sh` de v1.39.0 a v1.63.0 lê as regras do TEXTO deste arquivo (nome
+  -- da regra e tabela na MESMA linha do create), até dentro de corpo de função,
+  -- e cobraria estas regras numa instalação sem o módulo. Esse script antigo
+  -- fica no disco durante a atualização, então o conserto dele não alcança
+  -- quem atualiza: a forma do texto sim. Vigiado por
+  -- tests/unit/adr-0002-funcao-provisionadora.test.ts.
   create policy odontologia_procedimentos_select
     on public.odontologia_procedimentos
     for select using (
@@ -95,7 +102,7 @@ begin
   comment on table public.odontologia_procedimentos is
     'Cadastro de procedimentos da clínica odontológica (nome, duração padrão, valor de referência). Leitura para a organização, escrita manager+.';
 
-  -- ── odontologia_atendimentos ──────────────────────────────────────────────
+  -- ── odontologia_atendimentos (Fatia 3) ───────────────────────────────────
   create table if not exists public.odontologia_atendimentos (
     id uuid primary key default gen_random_uuid(),
     organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -115,7 +122,7 @@ begin
     valor_cobrado_cents bigint check (valor_cobrado_cents is null or valor_cobrado_cents > 0),
 
     -- A MESMA linha serve de previsto (agendado) e de registrado
-    -- (concluido/faltou) — ver a migration 0722.
+    -- (concluido/faltou) — ver o cabeçalho desta migration.
     status text not null default 'agendado' check (status in ('agendado', 'concluido', 'faltou', 'cancelado')),
     data_hora timestamptz not null,
 
@@ -142,6 +149,9 @@ begin
     );
 
   drop policy if exists odontologia_atendimentos_insert on public.odontologia_atendimentos;
+  -- `agent`+ registra (cria o previsto, marca concluído/faltou); a régua fina
+  -- de quando uma edição é CORREÇÃO (manager+) é da rota PATCH, não da RLS —
+  -- ver o cabeçalho desta migration.
   create policy odontologia_atendimentos_insert
     on public.odontologia_atendimentos
     for insert
@@ -225,7 +235,8 @@ begin
   comment on table public.odontologia_atendimento_procedimentos is
     'Procedimentos previstos/realizados de um atendimento (N:N). Leitura para a organização; agent+ adiciona, manager+ remove (correção).';
 
-  -- ── odontologia_pacientes (Fatia 6) ───────────────────────────────────────
+
+  -- ── odontologia_pacientes (Fatia 6) ──────────────────────────────
   create table if not exists public.odontologia_pacientes (
     id uuid primary key default gen_random_uuid(),
     organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -290,7 +301,6 @@ begin
 
   comment on table public.odontologia_pacientes is
     'O cadastro de Paciente — separado do Contato (DIRC: Referenciar, nunca duplicar nome/telefone). Um contato só é paciente quando esta linha existe. Leitura para a organização; agent+ cria (manual ou automático no primeiro atendimento); manager+ arquiva/reativa. Sem DELETE — nunca hard-delete.';
-
   -- ── LGPD (D8, migration 0485): declara a seção, numa função PRÓPRIA ─────
   -- `fn_odontologia_declarar_secoes_lgpd()` e não um `insert` aqui dentro: o
   -- molde de forma da D4 (`tests/invariants/molde-de-provisionadora.ts`,

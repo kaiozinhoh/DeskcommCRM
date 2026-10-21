@@ -55791,11 +55791,12 @@ create trigger trg_prospeccao_saida_volta_com_a_mensagem
   when (new.status = 'failed' and old.status is distinct from 'failed')
   execute function public.fn_prospeccao_saida_volta_com_a_mensagem();
 
--- ---- odontologia: módulo de tabela via ADR-0002 (migrations 0721/0722) ----
+-- ---- odontologia: módulo de tabela via ADR-0002 (migrations 0721/0722/0726) ----
 -- ⚠️ ANTES DA VARREDURA anon: cria função. Corpo completo e o porquê de cada
 -- decisão (D2/D4/D5/D8) em
--- supabase/migrations/20261021064447_0721_odontologia_modulo_oficial.sql e
--- supabase/migrations/20261021064448_0722_odontologia_atendimentos.sql —
+-- supabase/migrations/20261021064447_0721_odontologia_modulo_oficial.sql,
+-- supabase/migrations/20261021064448_0722_odontologia_atendimentos.sql e
+-- supabase/migrations/20261021181312_0726_odontologia_pacientes.sql —
 -- criar a função aqui NÃO cria tabela nenhuma; as tabelas só nascem quando um
 -- administrador da instalação chama fn_modulo_instalar('odontologia', ...).
 
@@ -56006,6 +56007,72 @@ begin
   comment on table public.odontologia_atendimento_procedimentos is
     'Procedimentos previstos/realizados de um atendimento (N:N). Leitura para a organização; agent+ adiciona, manager+ remove (correção).';
 
+
+  -- ── odontologia_pacientes (Fatia 6) ──────────────────────────────
+  create table if not exists public.odontologia_pacientes (
+    id uuid primary key default gen_random_uuid(),
+    organization_id uuid not null references public.organizations(id) on delete cascade,
+    -- `restrict`, nunca cascade: apagar o cadastro de paciente nunca é o
+    -- caminho (catálogo de permissões — "nunca hard-delete"); o contato é que
+    -- pode ser anonimizado, e aí o vínculo por `id` sobrevive.
+    contact_id uuid not null references public.contacts(id) on delete restrict,
+    -- "Arquivar" em vez de apagar: um paciente que a clínica não atende mais
+    -- some das listas sem perder o histórico de atendimentos.
+    ativo boolean not null default true,
+
+    created_by uuid references auth.users(id) on delete set null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+
+    -- Um contato tem no máximo um cadastro de paciente por organização — é a
+    -- trava que torna "criar o cadastro" idempotente (a API de atendimentos
+    -- pode tentar de novo sem duplicar).
+    constraint odontologia_pacientes_contato_unico unique (organization_id, contact_id)
+  );
+
+  create index if not exists odontologia_pacientes_org_idx
+    on public.odontologia_pacientes (organization_id);
+  create index if not exists odontologia_pacientes_org_ativo_idx
+    on public.odontologia_pacientes (organization_id, ativo);
+
+  alter table public.odontologia_pacientes enable row level security;
+  drop policy if exists tenant_isolation_odontologia_pacientes_all on public.odontologia_pacientes;
+
+  drop policy if exists odontologia_pacientes_select on public.odontologia_pacientes;
+  create policy odontologia_pacientes_select
+    on public.odontologia_pacientes
+    for select using (
+      organization_id in (select public.fn_user_org_ids()) or public.fn_is_platform_admin()
+    );
+
+  drop policy if exists odontologia_pacientes_insert on public.odontologia_pacientes;
+  -- `agent`+ cria — mesmo degrau de quem registra um atendimento (a criação
+  -- automática no primeiro atendimento usa este mesmo piso).
+  create policy odontologia_pacientes_insert
+    on public.odontologia_pacientes
+    for insert
+    with check (public.fn_is_platform_admin()
+                or (organization_id in (select public.fn_user_org_ids())
+                    and public.fn_role_at_least(organization_id, 'agent')
+                    and exists (select 1 from public.contacts c
+                                 where c.id = contact_id and c.organization_id = odontologia_pacientes.organization_id)));
+
+  drop policy if exists odontologia_pacientes_update on public.odontologia_pacientes;
+  -- `manager`+ arquiva/reativa — a mesma régua de quem corrige um atendimento
+  -- já registrado.
+  create policy odontologia_pacientes_update
+    on public.odontologia_pacientes
+    for update
+    using (public.fn_is_platform_admin()
+           or (organization_id in (select public.fn_user_org_ids())
+               and public.fn_role_at_least(organization_id, 'manager')))
+    with check (public.fn_is_platform_admin()
+                or (organization_id in (select public.fn_user_org_ids())
+                    and public.fn_role_at_least(organization_id, 'manager')));
+  revoke all on public.odontologia_pacientes from anon;
+
+  comment on table public.odontologia_pacientes is
+    'O cadastro de Paciente — separado do Contato (DIRC: Referenciar, nunca duplicar nome/telefone). Um contato só é paciente quando esta linha existe. Leitura para a organização; agent+ cria (manual ou automático no primeiro atendimento); manager+ arquiva/reativa. Sem DELETE — nunca hard-delete.';
   -- ── LGPD (D8, migration 0485): declara a seção, numa função PRÓPRIA ─────
   -- `fn_odontologia_declarar_secoes_lgpd()` e não um `insert` aqui dentro: o
   -- molde de forma da D4 (`tests/invariants/molde-de-provisionadora.ts`,
