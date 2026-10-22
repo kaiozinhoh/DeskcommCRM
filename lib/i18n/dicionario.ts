@@ -15086,6 +15086,9 @@ export const DICIONARIO: Traducoes = {
   "Anexos": { es: "Adjuntos" },
   "Anexar arquivo": { es: "Adjuntar archivo" },
   "Nenhum anexo ainda.": { es: "Ningún adjunto todavía." },
+  "Esse contato já existia — cadastrado como paciente.": {
+    es: "Ese contacto ya existía — registrado como paciente.",
+  },
   "Atestado odontológico": { es: "Certificado odontológico" },
   "Atesto, para os devidos fins, que": { es: "Certifico, para los fines pertinentes, que" },
   "Necessita de afastamento de suas atividades por": {

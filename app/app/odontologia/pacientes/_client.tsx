@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { ChipDeEtiqueta } from "@/components/tags/ChipDeEtiqueta";
 import { NewContactDialog } from "@/components/contacts/NewContactDialog";
@@ -76,6 +77,14 @@ export function Pacientes() {
       void qc.invalidateQueries({ queryKey: ["odontologia", "pacientes"] });
     },
   });
+
+  // "Novo paciente" tenta CRIAR um contato. Quando o telefone/e-mail/CPF digitado já é de um
+  // contato vivo (409 contact_exists), o caminho certo não é um toast morto — é cadastrar ESSE
+  // contato como paciente, que é exatamente o que a pessoa queria.
+  function aoAcharContatoExistente(contactId: string): void {
+    toast.info(t("Esse contato já existia — cadastrado como paciente."));
+    cadastrar.mutate(contactId);
+  }
 
   // Contatos que ainda NÃO são pacientes, para a busca de cadastro — só dispara com texto.
   const contatosParaCadastro = useQuery({
@@ -263,6 +272,7 @@ export function Pacientes() {
         open={novoPacienteAberto}
         onOpenChange={setNovoPacienteAberto}
         onCriado={(novoContato) => cadastrar.mutate(novoContato.id)}
+        onContatoExistente={aoAcharContatoExistente}
       />
     </div>
   );
