@@ -95,6 +95,8 @@ export const O_QUE_FICA = {
   honorarios_parcelas: "as parcelas que ele paga",
   odontologia_atendimentos:
     "os atendimentos odontológicos dele: procedimentos, dentista, dente/região, status e valor cobrado (sem a observação clínica interna da equipe)",
+  odontologia_prontuario_anexos:
+    "os anexos do prontuário dele: nome do arquivo, tipo e tamanho (o arquivo em si não sai no export, mesma régua de mídia das mensagens)",
   orders: "os pedidos dele na loja",
   activities: "o que foi registrado sobre ele e quando",
   checkpoints: "o resumo que a máquina fez da conversa com ele (LGPD art. 20)",

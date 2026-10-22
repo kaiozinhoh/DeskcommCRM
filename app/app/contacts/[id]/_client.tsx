@@ -47,6 +47,7 @@ import { PropostasDeDado } from "@/components/contacts/PropostasDeDado";
 import { RoteirosDoContato } from "@/components/contacts/RoteirosDoContato";
 import { ConversaNoDossie } from "@/components/kanban/ConversaNoDossie";
 import { HistoricoDeConsultasOdontologicas } from "@/components/contacts/HistoricoDeConsultasOdontologicas";
+import { ProntuarioEAnexos } from "@/components/contacts/ProntuarioEAnexos";
 import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
 import { origemDoContato } from "@/lib/leads/origem-do-contato";
 import { phoneForDisplay } from "@/lib/channels/phone-variants";
@@ -56,6 +57,8 @@ interface Props {
   contactId: string;
   /** Painéis de módulo de dados que declaram referência a contato. Resolvido no servidor. */
   paineisDeModulo?: { modulo: string; objeto: string }[];
+  /** Aba inicial — "overview" por padrão. A ficha do Paciente (Fatia 6) chega já em "odontologia". */
+  defaultTab?: string;
 }
 
 /**
@@ -76,7 +79,7 @@ function NivelDaOrigem({ rotulo, valor }: { rotulo: string; valor: string | null
   );
 }
 
-export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) {
+export function ContactDetailClient({ contactId, paineisDeModulo = [], defaultTab = "overview" }: Props) {
   const localeDaData = useLocaleDeData();
   const t = useT();
   const q = useContact(contactId);
@@ -369,7 +372,7 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
         />
       )}
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="overview">{t("Visão geral")}</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
@@ -532,8 +535,9 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
         </TabsContent>
 
         {moduloOdontologiaInstalado && (
-          <TabsContent value="odontologia" className="mt-4">
+          <TabsContent value="odontologia" className="mt-4 space-y-4">
             <HistoricoDeConsultasOdontologicas contactId={contactId} />
+            <ProntuarioEAnexos contactId={contactId} />
           </TabsContent>
         )}
 

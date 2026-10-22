@@ -20,6 +20,7 @@ import { normalizarTags } from "@/lib/contacts/tag-normalizada";
 import { contactCreateSchemaDoPais, type ContactCreate } from "@/lib/schemas/contacts";
 import type { Contact } from "@/lib/types/contacts";
 import { useCreateContact } from "@/hooks/contacts/useCreateContact";
+import { ApiError } from "@/lib/api/types";
 
 interface FormShape {
   name?: string;
@@ -46,9 +47,23 @@ interface Props {
    * selecionado, em vez de mandar a pessoa procurar de novo o que acabou de criar.
    */
   onCriado?: (contato: Contact) => void;
+  /**
+   * O telefone/e-mail/CPF digitado já é de um contato VIVO desta organização
+   * (409 `contact_exists`, app/api/v1/contacts/_handler.ts) — recebe o `id` dele.
+   * Sem isto, quem tenta "criar" alguém que já é contato só via o toast de erro
+   * e fica sem próximo passo (ex.: a tela de Pacientes, que queria era VINCULAR
+   * esse contato, não cadastrar um novo).
+   */
+  onContatoExistente?: (contactId: string) => void;
 }
 
-export function NewContactDialog({ open, onOpenChange, nomeInicial, onCriado }: Props) {
+export function NewContactDialog({
+  open,
+  onOpenChange,
+  nomeInicial,
+  onCriado,
+  onContatoExistente,
+}: Props) {
   const t = useT();
   const perfil = perfilDoPais(useActiveOrg()?.country);
   const create = useCreateContact();
@@ -91,8 +106,17 @@ export function NewContactDialog({ open, onOpenChange, nomeInicial, onCriado }: 
       // silêncio. Quem garante que este caminho não volta a errar é o tipo do
       // hook, ligado ao retorno da rota.
       if (resposta?.data?.contact) onCriado?.(resposta.data.contact);
-    } catch {
-      // error toast already handled by hook
+    } catch (erro) {
+      // O toast de erro genérico já saiu pelo hook (onError: showApiError). Esta
+      // é a continuação específica de UM erro (409 contact_exists): quem chamou
+      // pode ter um próximo passo melhor que "a pessoa lê o toast e desiste".
+      if (erro instanceof ApiError && erro.code === "contact_exists") {
+        const contactId = (erro.details as { contact_id?: unknown } | undefined)?.contact_id;
+        if (typeof contactId === "string" && onContatoExistente) {
+          onContatoExistente(contactId);
+          onOpenChange(false);
+        }
+      }
     }
   }
 

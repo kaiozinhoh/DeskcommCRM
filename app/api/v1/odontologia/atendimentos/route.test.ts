@@ -128,6 +128,7 @@ describe("POST /api/v1/odontologia/atendimentos", () => {
   it("agent registra um atendimento previsto (sem procedimento) — controle positivo", async () => {
     autorizadoComo("agent");
     const { client } = fakeSupabase({
+      odontologia_pacientes: { data: { id: "pac1" }, error: null },
       odontologia_atendimentos: {
         data: { id: "a1", contact_id: CONTACT_ID, status: "agendado" },
         error: null,
@@ -147,6 +148,7 @@ describe("POST /api/v1/odontologia/atendimentos", () => {
   it("registro direto já concluído emite odontologia.atendimento_registrado", async () => {
     autorizadoComo("agent");
     const { client } = fakeSupabase({
+      odontologia_pacientes: { data: { id: "pac1" }, error: null },
       odontologia_atendimentos: {
         data: { id: "a1", contact_id: CONTACT_ID, status: "concluido" },
         error: null,
@@ -180,6 +182,7 @@ describe("POST /api/v1/odontologia/atendimentos", () => {
   it("procedimento de outra organização → 422, e o atendimento não é gravado", async () => {
     autorizadoComo("agent");
     const { client } = fakeSupabase({
+      odontologia_pacientes: { data: { id: "pac1" }, error: null },
       odontologia_procedimentos: { data: [], error: null }, // nenhum achado = inválido
     });
     const from = vi.fn(client.from);

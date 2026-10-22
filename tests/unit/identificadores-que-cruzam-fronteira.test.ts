@@ -187,6 +187,10 @@ const SITES: { arquivo: string; fronteira: string; papel?: "gerador" | "validado
   { arquivo: "app/api/v1/ai/knowledge/sources/route.ts", fronteira: "storage.chave-de-objeto" },
   // O PDF da proposta comercial (#1832): `<org>/<proposta>.pdf`, dois uuids.
   { arquivo: "lib/propostas/storage.ts", fronteira: "storage.chave-de-objeto" },
+  // Anexo do prontuário odontológico (migration 0727): `<org>/<paciente>/<uuid>.<ext>`,
+  // bucket privado `odontologia-anexos`. A extensão sai da allowlist de MIME aceito
+  // (EXTENSAO_POR_MIME), nunca do nome que o browser mandou.
+  { arquivo: "app/api/v1/odontologia/pacientes/[id]/anexos/route.ts", fronteira: "storage.chave-de-objeto" },
   // Chave de idempotência: os geradores (manda UUID) e os validadores (exige UUID).
   { arquivo: "app/onboarding/connect-whatsapp/_client.tsx", fronteira: "api.idempotency-key", papel: "gerador" },
   { arquivo: "components/extensions/ExtensionsManager.tsx", fronteira: "api.idempotency-key", papel: "gerador" },

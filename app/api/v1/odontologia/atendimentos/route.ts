@@ -23,6 +23,8 @@ import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { atualizarDataDaUltimaConsulta } from "@/lib/odontologia/data-da-ultima-consulta";
+import { garantirPaciente } from "@/lib/odontologia/garantir-paciente";
+import { procedimentosPorAtendimento } from "@/lib/odontologia/procedimentos-por-atendimento";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -44,47 +46,6 @@ const CAMPOS =
 interface AtendimentoLinha {
   id: string;
   [chave: string]: unknown;
-}
-
-/**
- * Os nomes dos procedimentos de cada atendimento, em duas consultas FLAT (sem o embed do
- * PostgREST `tabela(coluna)`): o tipo da coluna em `odontologia_atendimento_procedimentos` e em
- * `odontologia_procedimentos` ainda não está em `lib/database.types.ts` (módulo recém-criado,
- * sem `db push` nesta sandbox) — o parser de tipos do select embedado trava em
- * `GenericStringError` sem o schema real. Mesma solução de `lib/lgpd/export-collector.ts`.
- */
-async function procedimentosPorAtendimento(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  organizationId: string,
-  atendimentoIds: string[],
-): Promise<Map<string, { id: string; nome: string }[]>> {
-  const mapa = new Map<string, { id: string; nome: string }[]>();
-  if (atendimentoIds.length === 0) return mapa;
-
-  const { data: vinculos } = await supabase
-    .from("odontologia_atendimento_procedimentos")
-    .select("atendimento_id, procedimento_id")
-    .eq("organization_id", organizationId)
-    .in("atendimento_id", atendimentoIds);
-  const linhas = (vinculos ?? []) as { atendimento_id: string; procedimento_id: string }[];
-  const procedimentoIds = [...new Set(linhas.map((v) => v.procedimento_id))];
-  if (procedimentoIds.length === 0) return mapa;
-
-  const { data: procedimentos } = await supabase
-    .from("odontologia_procedimentos")
-    .select("id, nome")
-    .eq("organization_id", organizationId)
-    .in("id", procedimentoIds);
-  const nomePor = new Map(((procedimentos ?? []) as { id: string; nome: string }[]).map((p) => [p.id, p.nome]));
-
-  for (const v of linhas) {
-    const nome = nomePor.get(v.procedimento_id);
-    if (!nome) continue;
-    const lista = mapa.get(v.atendimento_id) ?? [];
-    lista.push({ id: v.procedimento_id, nome });
-    mapa.set(v.atendimento_id, lista);
-  }
-  return mapa;
 }
 
 const criarSchema = z.object({
@@ -164,6 +125,26 @@ export async function POST(req: NextRequest): Promise<Response> {
   const corpo = lido.data;
 
   async function criar(): Promise<unknown> {
+    // "Um contato só é paciente quando esta linha existe" (migration 0726) — garante o
+    // cadastro ANTES do atendimento, no mesmo gesto de atender. Falha real (não o 23505 de
+    // corrida esperado) recusa a criação: um atendimento sem paciente contradiz o desenho.
+    const paciente = await garantirPaciente(supabase, orgId, corpo.contact_id, userId);
+    if (!paciente.ok) {
+      if (moduloNaoInstalado({ code: paciente.codigo })) {
+        throw new Recusa(fail("module_not_installed", MODULO_NAO_INSTALADO, 409, { requestId }));
+      }
+      throw new Recusa(fail("internal_error", paciente.mensagem, 500, { requestId }));
+    }
+    if (paciente.criado) {
+      await audit({
+        action: "odontologia.paciente_cadastrado",
+        resourceType: "odontologia_paciente",
+        resourceId: paciente.id,
+        requestId,
+        metadata: { contact_id: corpo.contact_id, origem: "primeiro_atendimento" },
+      });
+    }
+
     // A FK de `procedimento_id` é conferida pelo dono da tabela, por cima da RLS: sem esta
     // leitura (com a sessão, recortada pela RLS) o atendimento aceitaria o procedimento de
     // outra organização.
